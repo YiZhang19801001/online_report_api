@@ -34,6 +34,6 @@ class DocketHelper
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
 
         // read all dockets during the period //todo :: transaction types
-        return Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->get();
+        return Docket::with("docketlines")->whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->get();
     }
 }
