@@ -33,7 +33,7 @@ class DocketHelper
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
 
-        // read all dockets during the period //todo :: transaction types
-        return Docket::with("docketlines")->whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->get();
+        // read all dockets during the period
+        return Docket::with("docketlines")->whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
     }
 }
