@@ -20,12 +20,29 @@ class ReportHelper
 
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
-        return compact('date', 'sales', 'numberOfTransactions');
+        $reportsForPaymentMethod = self::reportsForPaymentMethod();
+        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMehod');
+    }
+
+    public function reportsForPaymentMethod($collection)
+    {
+        #
+        $groups = $collection->groupBy()->get();
+        return $groups;
     }
 
     public function reportsForLast7Days($date)
     {
         $reports = array();
-        return array(compact('reports'));
+
+        $record = array('date', 'value');
+
+        $reports = [
+            'all' => array('date', 'value'),
+            'alipay' => array('date', 'value'),
+            'wechat' => array('date', 'value'),
+        ];
+
+        return $reports;
     }
 }
