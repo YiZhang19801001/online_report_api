@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
+use App\Payments;
 
 class ReportHelper
 {
@@ -20,14 +21,14 @@ class ReportHelper
 
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
-        $reportsForPaymentMethod = self::reportsForPaymentMethod();
-        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMehod');
+        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dateTime);
+        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod');
     }
 
-    public function reportsForPaymentMethod($collection)
+    public function reportsForPaymentMethod($start, $end)
     {
         #
-        $groups = $collection->groupBy()->get();
+        $groups = Payments::all()->groupBy('paymenttype');
         return $groups;
     }
 
