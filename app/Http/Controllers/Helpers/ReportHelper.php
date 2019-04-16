@@ -30,7 +30,7 @@ class ReportHelper
         $sql = Payments::whereBetween('docket_date', [$start, $end]);
         $sum = $sql->sum('amount');
         $groups = $sql
-            ->selectRaw("sum(amount) as total, paymenttype, (sum(amount)/$sum) as percentage")
+            ->selectRaw("sum(amount) as total, paymenttype, ROUND(sum(amount)/$sum,2) as percentage")
             ->groupBy('paymenttype')
             ->get();
         return $groups;
