@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
 use App\Shop;
+use \Illuminate\Support\Facades\DB;
 
 class DocketHelper
 {
@@ -27,13 +28,23 @@ class DocketHelper
         $startDate = $request->input("startDate", $this->today);
         $endDate = $request->input("endDate", $this->tommorrow);
 
+        $inputs = compact('shop_id', 'startDate', 'endDate');
+
+        return self::getTotalSales($inputs);
+
+    }
+
+    public function getTotalSales($inputs)
+    {
         // find shop according to inputs shop_ip
-        $shop = Shop::find($shop_id);
+        $shop = Shop::find($inputs['shop_id']);
 
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
 
-        // read all dockets during the period //todo :: transaction types
-        return Docket::with("docketlines")->whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->get();
+        DB::purge();
+        // read all dockets during the period
+        return Docket::with("docketlines")->whereBetween('docket_date', [$inputs['startDate'], $inputs['endDate']])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
+
     }
 }
