@@ -14,21 +14,25 @@ class ReportHelper
      */
     public function getDailySummary($dateTime)
     {
-        #
-        $date = $dateTime->format('Y-m-d');
+        $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
+        $date = $dt->format('Y-m-d');
 
-        $sql = Docket::whereBetween('docket_date', [$date, $dateTime])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $sql = Docket::whereBetween('docket_date', [$date, $dt])->where('transaction', "SA")->orWhere('transaction', "IV");
 
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
-        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dateTime);
+        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dt);
         return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod');
     }
 
     public function reportsForPaymentMethod($start, $end)
     {
-        #
-        $groups = Payments::all()->groupBy('paymenttype');
+        $sql = Payments::whereBetween('docket_date', [$start, $end]);
+        $sum = $sql->sum('amount');
+        $groups = $sql
+            ->selectRaw("sum(amount) as total, paymenttype, (sum(amount)/$sum) as percentage")
+            ->groupBy('paymenttype')
+            ->get();
         return $groups;
     }
 

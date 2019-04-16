@@ -18,7 +18,8 @@ class ReportController extends Controller
         $today = new \DateTime('now', new \DateTimeZone('Australia/Sydney'));
 
         $meta = $request->input('meta', 'dailySummary');
-        $date = $request->input('date', $today);
+
+        $date = date('y-m-d H:i:s', strtotime($request->input('date', $today)));
 
         #call helper class to generate data
         // use switch to filter the meta in controller make codes more readable in helper class
