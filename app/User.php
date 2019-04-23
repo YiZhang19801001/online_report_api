@@ -2,12 +2,17 @@
 
 namespace App;
 
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     use Notifiable;
+
+    protected $connection = 'mysql';
+    protected $talbe = 'users';
+    protected $primaryKey = 'user_id';
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +29,11 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
     ];
+
+    public function shops()
+    {
+        return $this->hasManyThrough('App\Shop', 'App\ShopToUser', 'user_id', 'shop_id', 'user_id', 'shop_id');
+    }
 }
