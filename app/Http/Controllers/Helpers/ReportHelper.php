@@ -3,7 +3,6 @@ namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
 use App\Payments;
-use App\Stock;
 
 class ReportHelper
 {
@@ -23,23 +22,32 @@ class ReportHelper
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
         $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dt);
-        $dockets = $sql->get();
-        $stock = Stock::where('custom1', '!=', null)->first();
+        // $dockets = $sql->get();
+        // $stock = Stock::where('custom1', '!=', null)->first();
 
-        $dataGroup = array($stock->custom1 => 0, $stock->custom2 => 0, 'extra' => 0, 'others' => 0);
-        foreach ($dockets as $docket) {
-            $docketLines = $docket->docketLines()->with('stock')->get();
-            foreach ($docketLines as $dl) {
-                if ($dl['stock']['cat1'] != 'TASTE' && $dl['stock']['cat1'] != 'EXTRA' && $dl['size_level'] != 0) {
-                    $dataGroup[$stock['custom' . $dl['size_level']]] += $dl['quantity'];
-                } else if ($dl['size_level'] == 0) {
-                    $dataGroup['others'] += $dl['quantity'];
-                } else {
+        // $result_array = array($stock->custom1 => 0, $stock->custom2 => 0, 'extra' => 0, 'others' => 0);
+        // foreach ($dockets as $docket) {
+        //     $docketLines = $docket->docketLines()->with('stock')->get();
+        //     foreach ($docketLines as $dl) {
+        //         if ($dl['stock']['cat1'] != 'TASTE' && $dl['stock']['cat1'] != 'EXTRA' && $dl['size_level'] != 0) {
+        //             $result_array[$stock['custom' . $dl['size_level']]] += $dl['quantity'];
+        //         } else if ($dl['size_level'] == 0) {
+        //             $result_array['others'] += $dl['quantity'];
+        //         } else {
 
-                    $dataGroup['extra'] += $dl['quantity'];
-                }
-            }
-        }
+        //             $result_array['extra'] += $dl['quantity'];
+        //         }
+        //     }
+        // }
+        // $dataGroup = array(
+        //     ['size' => $stock->custom1, 'quantity' => $result_array[$stock->custom1]],
+        //     ['size' => $stock->custom2, 'quantity' => $result_array[$stock->custom2]],
+        //     ['size' => 'extra', 'quantity' => $result_array['extra']],
+        //     ['size' => 'others', 'quantity' => $result_array['others']],
+
+        // );
+        $dataGroup = array();
+
         return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod', 'dataGroup');
     }
 

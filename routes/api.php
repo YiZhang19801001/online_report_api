@@ -17,8 +17,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::apiResources(['dockets' => 'DocketController', 'shops' => 'ShopController', 'reports' => 'ReportController']);
-
 Route::group([
     'prefix' => 'auth',
 ], function () {
@@ -31,4 +29,10 @@ Route::group([
         Route::get('logout', 'AuthController@logout');
         Route::get('user', 'AuthController@user');
     });
+});
+
+Route::group([
+    'middleware' => 'auth:api',
+], function () {
+    Route::apiResources(['dockets' => 'DocketController', 'shops' => 'ShopController', 'reports' => 'ReportController']);
 });
