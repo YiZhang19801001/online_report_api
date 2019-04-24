@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Helpers\ReportHelper;
 use Illuminate\Http\Request;
+use \Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -20,6 +21,16 @@ class ReportController extends Controller
         $meta = $request->input('meta', 'dailySummary');
 
         $date = date('y-m-d H:i:s', strtotime($request->input('date', $today)));
+
+        $user = $request->user();
+
+        // find shop according to inputs shop_ip
+        $shop = $user->shops()->first();
+
+        DB::purge();
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
 
         #call helper class to generate data
         // use switch to filter the meta in controller make codes more readable in helper class

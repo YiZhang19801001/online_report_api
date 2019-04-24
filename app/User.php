@@ -4,15 +4,14 @@ namespace App;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $connection = 'mysql';
     protected $talbe = 'users';
-    protected $primaryKey = 'user_id';
-    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -29,11 +28,11 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password',
+        'password', 'remember_me',
     ];
 
     public function shops()
     {
-        return $this->hasManyThrough('App\Shop', 'App\ShopToUser', 'user_id', 'shop_id', 'user_id', 'shop_id');
+        return $this->hasManyThrough('App\Shop', 'App\ShopToUser', 'user_id', 'shop_id', 'id', 'shop_id');
     }
 }

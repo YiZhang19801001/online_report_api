@@ -11,6 +11,11 @@ class DocketLine extends Model
 
     public $timestamps = false;
 
+    protected $casts = [
+        'stock_id' => 'integer',
+        'quantity' => 'integer',
+    ];
+
     // public $hidden = [
     //     "docket_id",
     //     "stock_id",
@@ -22,4 +27,9 @@ class DocketLine extends Model
     //     "serial_no",
     //     "package_id",
     // ];
+
+    public function stock()
+    {
+        return $this->hasOne('App\Stock', 'stock_id', 'stock_id');
+    }
 }
