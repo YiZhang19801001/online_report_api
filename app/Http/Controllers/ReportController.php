@@ -43,7 +43,8 @@ class ReportController extends Controller
                 break;
             case 'monthlySummary':
                 break;
-
+            case 'dataGroup':
+                $reports = $this->helper->getDataGroup($date);
             default:
                 # code...
                 break;
