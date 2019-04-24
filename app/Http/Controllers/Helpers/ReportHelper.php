@@ -16,12 +16,13 @@ class ReportHelper
     {
         $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
         $date = $dt->format('Y-m-d');
+        $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
 
-        $sql = Docket::whereBetween('docket_date', [$date, $dt])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('transaction', "SA")->orWhere('transaction', "IV");
 
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
-        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dt);
+        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
         // $dockets = $sql->get();
         // $stock = Stock::where('custom1', '!=', null)->first();
 
@@ -48,7 +49,7 @@ class ReportHelper
         // );
         $dataGroup = array();
 
-        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod', 'dataGroup');
+        return compact('date', 'stopDate', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod', 'dataGroup');
     }
 
     public function reportsForPaymentMethod($start, $end)
