@@ -36,18 +36,4 @@ class ReportHelper
         return $groups;
     }
 
-    public function reportsForLast7Days($date)
-    {
-        $reports = array();
-
-        $record = array('date', 'value');
-
-        $reports = [
-            'all' => array('date', 'value'),
-            'alipay' => array('date', 'value'),
-            'wechat' => array('date', 'value'),
-        ];
-
-        return $reports;
-    }
 }
