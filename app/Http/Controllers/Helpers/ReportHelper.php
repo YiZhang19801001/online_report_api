@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
 use App\Payments;
+use App\Stock;
 
 class ReportHelper
 {
@@ -22,7 +23,24 @@ class ReportHelper
         $sales = $sql->sum('total_inc');
         $numberOfTransactions = $sql->count();
         $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $dt);
-        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod');
+        $dockets = $sql->get();
+        $stock = Stock::where('custom1', '!=', null)->first();
+
+        $dataGroup = array($stock->custom1 => 0, $stock->custom2 => 0, 'extra' => 0, 'others' => 0);
+        foreach ($dockets as $docket) {
+            $docketLines = $docket->docketLines()->with('stock')->get();
+            foreach ($docketLines as $dl) {
+                if ($dl['stock']['cat1'] != 'TASTE' && $dl['stock']['cat1'] != 'EXTRA' && $dl['size_level'] != 0) {
+                    $dataGroup[$stock['custom' . $dl['size_level']]] += $dl['quantity'];
+                } else if ($dl['size_level'] == 0) {
+                    $dataGroup['others'] += $dl['quantity'];
+                } else {
+
+                    $dataGroup['extra'] += $dl['quantity'];
+                }
+            }
+        }
+        return compact('date', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod', 'dataGroup');
     }
 
     public function reportsForPaymentMethod($start, $end)
