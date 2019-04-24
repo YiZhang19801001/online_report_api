@@ -38,7 +38,7 @@ class AuthController extends Controller
     /**
      * Login user and create token
      *
-     * @param  [string] email
+     * @param  [string] name
      * @param  [string] password
      * @param  [boolean] remember_me
      * @return [string] access_token
@@ -48,11 +48,11 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|string|email',
+            'name' => 'required|string',
             'password' => 'required|string',
             'remember_me' => 'boolean',
         ]);
-        $credentials = request(['email', 'password']);
+        $credentials = request(['name', 'password']);
         if (!Auth::attempt($credentials)) {
             return response()->json([
                 'message' => 'Unauthorized',
