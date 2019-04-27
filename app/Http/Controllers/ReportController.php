@@ -20,7 +20,7 @@ class ReportController extends Controller
 
         $meta = $request->input('meta', 'dailySummary');
 
-        $date = date('y-m-d H:i:s', strtotime($request->input('date', $today)));
+        $date = date('y-m-d H:i:s', strtotime($request->input('date', $today->format('YYYY-MM-DD'))));
 
         $user = $request->user();
 
@@ -49,7 +49,7 @@ class ReportController extends Controller
                 # code...
                 break;
         }
-
+        $reports['shop'] = $shop->shop_name;
         return response()->json(compact('reports'), 200);
 
     }
