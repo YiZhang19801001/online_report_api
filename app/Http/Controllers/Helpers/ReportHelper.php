@@ -18,14 +18,18 @@ class ReportHelper
         $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
         $date = $dt->format('Y-m-d');
         $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
+        $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
 
         $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('transaction', "SA")->orWhere('transaction', "IV");
 
         $sales = $sql->sum('total_inc');
+        $compareSales = $compareSql->sum('total_inc');
         $numberOfTransactions = $sql->count();
+        $compareNumberOfTransactions = $compareSql->count();
         $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
 
-        return compact('date', 'stopDate', 'sales', 'numberOfTransactions', 'reportsForPaymentMethod');
+        return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
     }
 
     public function reportsForPaymentMethod($start, $end)
