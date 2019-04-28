@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Helpers\ReportHelper;
+use App\Shop;
 use Illuminate\Http\Request;
 use \Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,16 @@ class ReportController extends Controller
         $user = $request->user();
 
         // find shop according to inputs shop_ip
-        $shop = $user->shops()->first();
+        $shopId = isset($request->shopId) ? $request->shopId : $user->shops()->first()->shop_id;
+
+        $check_if_shop_belong_to_user = $user->shops()->where('shops.shop_id', $shopId)->first();
+        if ($check_if_shop_belong_to_user === null) {
+            return response()->json(['errors' => ['Not authorized account to view this shop']], 400);
+        }
+
+        $shop = Shop::find($shopId);
+
+        $shops = $user->shops()->select('shop_name')->get();
 
         DB::purge();
 
@@ -49,7 +59,7 @@ class ReportController extends Controller
                 # code...
                 break;
         }
-        $reports['shop'] = $shop->shop_name;
+        $reports['shops'] = $shops;
         return response()->json(compact('reports'), 200);
 
     }
