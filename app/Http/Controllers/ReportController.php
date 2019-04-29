@@ -50,6 +50,7 @@ class ReportController extends Controller
 
                 break;
             case 'weeklySummary':
+                $reports = $this->helper->getWeeklySummary($date);
                 break;
             case 'monthlySummary':
                 break;

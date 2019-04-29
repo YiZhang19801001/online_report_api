@@ -15,7 +15,7 @@ class ReportHelper
      */
     public function getDailySummary($dateTime)
     {
-        $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
+        $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
         $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
@@ -30,6 +30,14 @@ class ReportHelper
         $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
 
         return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
+    }
+
+    public function getWeeklySummary($dateTime)
+    {
+
+        $weeks = self::makeWeeks($dateTime);
+        return compact('weeks');
+
     }
 
     public function reportsForPaymentMethod($start, $end)
@@ -76,5 +84,61 @@ class ReportHelper
 
         );
         return compact('dataGroup');
+    }
+
+    public function weekOfMonth($date)
+    {
+        //Get the first day of the month.
+        $firstOfMonthString = $date->format("Y-m-01");
+
+        //Apply above formula.
+        return $date->format('w') + 1 - $firstOfMonth->format('w');
+    }
+
+    public function getWeekDates($year, $week)
+    {
+        $from = date("Y-m-d", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
+        $to = date("Y-m-d", strtotime("{$year}-W{$week}-7")); //Returns the date of sunday in week
+
+        return array('from' => $from, 'to' => $to);
+    }
+
+    public function makeWeeks($dateTime)
+    {
+        $dt = self::makeDateTime($dateTime);
+        $month = $dt->format("m");
+        $day = $dt->format('d');
+        $year = $dt->format('Y');
+        $firstDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
+        $lastDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $firstDay = self::makeDateTime($firstDayOfMonth);
+        $weekInYear = $firstDay->format('W');
+
+        $weeks = array();
+
+        $flag = true;
+
+        while ($flag) {
+            $dateRange = self::getWeekDates($year, $weekInYear);
+            $firstDayInWeek = $dateRange['from'];
+            $lastDayInWeek = $dateRange['to'];
+            if (strtotime($firstDayInWeek) < strtotime($firstDayOfMonth)) {
+                $dateRange['from'] = $firstDayOfMonth;
+            }
+            // check if over last day of the month
+            if (strtotime($lastDayInWeek) >= strtotime($lastDayOfMonth)) {
+                $flag = false; // stop loop when day over last day
+                $dateRange['to'] = $lastDayOfMonth;
+            }
+
+            array_push($weeks, $dateRange);
+            $weekInYear++;
+        }
+        return $weeks;
+    }
+
+    public function makeDateTime($string)
+    {
+        return new \DateTime($string, new \DateTimeZone('Australia/Sydney'));
     }
 }
