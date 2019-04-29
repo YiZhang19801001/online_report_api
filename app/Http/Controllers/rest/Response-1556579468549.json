@@ -1,0 +1,235 @@
+{
+  "reports": {
+    "weeklyReports": [
+      {
+        "sales": "186660.2800",
+        "tx": 867,
+        "from": "2019-04-01",
+        "to": "2019-04-07",
+        "paymentMethodReports": [
+          {
+            "total": "2089.4300",
+            "paymenttype": "Amex Offline",
+            "percentage": ".010000000000000"
+          },
+          {
+            "total": "67621.7800",
+            "paymenttype": "EFTPOS",
+            "percentage": ".360000000000000"
+          },
+          {
+            "total": "6228.8400",
+            "paymenttype": "Visa/M Offline",
+            "percentage": ".030000000000000"
+          },
+          {
+            "total": "15103.9100",
+            "paymenttype": "redpayments",
+            "percentage": ".080000000000000"
+          },
+          {
+            "total": "6818.4400",
+            "paymenttype": "Eftpos Offline",
+            "percentage": ".040000000000000"
+          },
+          {
+            "total": "52454.8000",
+            "paymenttype": "VISA/Master",
+            "percentage": ".280000000000000"
+          },
+          {
+            "total": "31111.8500",
+            "paymenttype": "Cash",
+            "percentage": ".170000000000000"
+          },
+          {
+            "total": "5231.2300",
+            "paymenttype": "AMEX",
+            "percentage": ".030000000000000"
+          }
+        ]
+      },
+      {
+        "sales": "176415.8700",
+        "tx": 858,
+        "from": "2019-04-08",
+        "to": "2019-04-14",
+        "paymentMethodReports": [
+          {
+            "total": "779.4900",
+            "paymenttype": "Amex Offline",
+            "percentage": ".000000000000000"
+          },
+          {
+            "total": "67296.8600",
+            "paymenttype": "EFTPOS",
+            "percentage": ".380000000000000"
+          },
+          {
+            "total": "3416.9000",
+            "paymenttype": "Visa/M Offline",
+            "percentage": ".020000000000000"
+          },
+          {
+            "total": "18515.9800",
+            "paymenttype": "redpayments",
+            "percentage": ".100000000000000"
+          },
+          {
+            "total": "2415.7900",
+            "paymenttype": "Eftpos Offline",
+            "percentage": ".010000000000000"
+          },
+          {
+            "total": "48539.8800",
+            "paymenttype": "VISA/Master",
+            "percentage": ".280000000000000"
+          },
+          {
+            "total": "30843.5000",
+            "paymenttype": "Cash",
+            "percentage": ".170000000000000"
+          },
+          {
+            "total": "4607.4400",
+            "paymenttype": "AMEX",
+            "percentage": ".030000000000000"
+          }
+        ]
+      },
+      {
+        "sales": "221008.3000",
+        "tx": 993,
+        "from": "2019-04-15",
+        "to": "2019-04-21",
+        "paymentMethodReports": [
+          {
+            "total": "80125.1700",
+            "paymenttype": "EFTPOS",
+            "percentage": ".360000000000000"
+          },
+          {
+            "total": "1627.9500",
+            "paymenttype": "Visa/M Offline",
+            "percentage": ".010000000000000"
+          },
+          {
+            "total": "21179.5100",
+            "paymenttype": "redpayments",
+            "percentage": ".100000000000000"
+          },
+          {
+            "total": "1956.4400",
+            "paymenttype": "Eftpos Offline",
+            "percentage": ".010000000000000"
+          },
+          {
+            "total": "71194.1000",
+            "paymenttype": "VISA/Master",
+            "percentage": ".320000000000000"
+          },
+          {
+            "total": "40000.1500",
+            "paymenttype": "Cash",
+            "percentage": ".180000000000000"
+          },
+          {
+            "total": "4924.9700",
+            "paymenttype": "AMEX",
+            "percentage": ".020000000000000"
+          }
+        ]
+      },
+      {
+        "sales": "221485.8600",
+        "tx": 951,
+        "from": "2019-04-22",
+        "to": "2019-04-28",
+        "paymentMethodReports": [
+          {
+            "total": "4541.3600",
+            "paymenttype": "AMEX",
+            "percentage": ".020000000000000"
+          },
+          {
+            "total": "33189.1000",
+            "paymenttype": "Cash",
+            "percentage": ".150000000000000"
+          },
+          {
+            "total": "97475.6300",
+            "paymenttype": "EFTPOS",
+            "percentage": ".440000000000000"
+          },
+          {
+            "total": "981.4200",
+            "paymenttype": "Eftpos Offline",
+            "percentage": ".000000000000000"
+          },
+          {
+            "total": "16021.5300",
+            "paymenttype": "redpayments",
+            "percentage": ".070000000000000"
+          },
+          {
+            "total": "906.4500",
+            "paymenttype": "Visa/M Offline",
+            "percentage": ".000000000000000"
+          },
+          {
+            "total": "68370.3800",
+            "paymenttype": "VISA/Master",
+            "percentage": ".310000000000000"
+          }
+        ]
+      },
+      {
+        "sales": "25554.9700",
+        "tx": 131,
+        "from": "2019-04-29",
+        "to": "2019-04-30",
+        "paymentMethodReports": [
+          {
+            "total": "291.9200",
+            "paymenttype": "AMEX",
+            "percentage": ".01000000000000"
+          },
+          {
+            "total": "3298.6500",
+            "paymenttype": "Cash",
+            "percentage": ".13000000000000"
+          },
+          {
+            "total": "11376.5300",
+            "paymenttype": "EFTPOS",
+            "percentage": ".45000000000000"
+          },
+          {
+            "total": "70.5000",
+            "paymenttype": "Eftpos Offline",
+            "percentage": ".00000000000000"
+          },
+          {
+            "total": "1752.5900",
+            "paymenttype": "redpayments",
+            "percentage": ".07000000000000"
+          },
+          {
+            "total": "8764.7700",
+            "paymenttype": "VISA/Master",
+            "percentage": ".34000000000000"
+          }
+        ]
+      }
+    ],
+    "weeks": [
+      { "from": "2019-04-01", "to": "2019-04-07" },
+      { "from": "2019-04-08", "to": "2019-04-14" },
+      { "from": "2019-04-15", "to": "2019-04-21" },
+      { "from": "2019-04-22", "to": "2019-04-28" },
+      { "from": "2019-04-29", "to": "2019-04-30" }
+    ],
+    "comparison": { "sales": "899252.3700", "tx": 4285 },
+    "shops": [{ "shop_name": "\u8c46\u635e", "user_id": 2 }]
+  }
+}
