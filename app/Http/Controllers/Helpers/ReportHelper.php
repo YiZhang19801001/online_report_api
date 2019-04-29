@@ -50,6 +50,9 @@ class ReportHelper
         $weeks = self::makeWeeks($dateTime);
         foreach ($weeks as $week) {
             $report = self::getWeeklyReport($week);
+            $report['from'] = $week['from'];
+            $report['to'] = $week['to'];
+            $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to']);
             array_push($weeklyReports, $report);
         }
         return compact('weeklyReports', 'weeks', 'comparison');
