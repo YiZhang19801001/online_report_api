@@ -34,10 +34,13 @@ class ReportHelper
 
     public function getWeeklySummary($dateTime)
     {
-
+        $weeklyReports = array();
         $weeks = self::makeWeeks($dateTime);
-        return compact('weeks');
-
+        foreach ($weeks as $week) {
+            $report = self::getWeeklyReport($week);
+            array_push($weeklyReports, $report);
+        }
+        return compact('weeklyReports');
     }
 
     public function reportsForPaymentMethod($start, $end)
@@ -140,5 +143,16 @@ class ReportHelper
     public function makeDateTime($string)
     {
         return new \DateTime($string, new \DateTimeZone('Australia/Sydney'));
+    }
+
+    public function getWeeklyReport($week)
+    {
+        $startDate = $week['from'];
+        $endDate = $week['to'];
+
+        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->count();
+
+        return array('sales' => $sales, 'tx' => $tx);
     }
 }
