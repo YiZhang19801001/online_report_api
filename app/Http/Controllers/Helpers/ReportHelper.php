@@ -34,13 +34,25 @@ class ReportHelper
 
     public function getWeeklySummary($dateTime)
     {
+        //todo:: clean up duplication codes in self::getWeeklyReport()
+        $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
+
+        $dt = self::makeDateTime($dtString);
+        $month = $dt->format('m');
+        $year = $dt->format('Y');
+        $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
+        $endDate = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->count();
+        $comparison = ['sales' => $sales, 'tx' => $tx];
+
         $weeklyReports = array();
         $weeks = self::makeWeeks($dateTime);
         foreach ($weeks as $week) {
             $report = self::getWeeklyReport($week);
             array_push($weeklyReports, $report);
         }
-        return compact('weeklyReports');
+        return compact('weeklyReports', 'weeks', 'comparison');
     }
 
     public function reportsForPaymentMethod($start, $end)
