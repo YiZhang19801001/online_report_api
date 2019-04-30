@@ -35,7 +35,7 @@ class ReportHelper
     public function getWeeklySummary($dateTime)
     {
         //todo:: clean up duplication codes in self::getWeeklyReport()
-        $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
+        $dtString = date('Y-m-d', strtotime($dateTime));
 
         $dt = self::makeDateTime($dtString);
         $month = $dt->format('m');
