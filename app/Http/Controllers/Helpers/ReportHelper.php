@@ -121,7 +121,7 @@ class ReportHelper
             array_push($reports, $report);
         }
 
-        return $reports;
+        return collect($reports)->values();
     }
 
     public function makeReport($shop, $startDate, $endDate)
@@ -131,7 +131,9 @@ class ReportHelper
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
         // read all dockets during the period
-        return ['data' => Docket::with("docketlines")->whereBetween('docket_date', [$this->yesterday, $this->today])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc'), 'shop' => $shop];
+        $sql = Docket::with("docketlines")->whereBetween('docket_date', [$this->yesterday, $this->today])->where('transaction', "SA")->orWhere('transaction', "IV");
+
+        return ['totalSales' => $sql->sum('total_inc'), 'totalTx' => $sql->count(), 'shop' => $shop];
     }
 
     public function weekOfMonth($date)

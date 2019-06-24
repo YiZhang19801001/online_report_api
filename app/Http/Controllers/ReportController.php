@@ -82,12 +82,11 @@ class ReportController extends Controller
 
         #call helper class to generate data
         $reports = $this->helper->getTotalSummary($shops, $startDate, $endDate);
-
         // use switch to filter the meta in controller make codes more readable in helper class
 
         $shops = $user->shops()->select('shop_name')->get();
         $path = 'totalSummary';
-        $reports['shops'] = $shops;
+        // $reports['shops'] = $shops;
         return response()->json(compact('reports', 'path'), 200);
     }
 }
