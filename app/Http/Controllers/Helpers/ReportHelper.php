@@ -4,9 +4,18 @@ namespace App\Http\Controllers\Helpers;
 use App\Docket;
 use App\Payments;
 use App\Stock;
+use \Illuminate\Support\Facades\DB;
 
 class ReportHelper
 {
+    public function __construct()
+    {
+        // prepare some constants
+        $tz = new \DateTimeZone("Australia/Sydney");
+        $this->today = new \DateTime("now", $tz);
+        $this->tommorrow = new \DateTime("+1 day", $tz);
+        $this->yesterday = new \DateTime("-1 day", $tz);
+    }
     /**
      * function - generate daily summay
      *
@@ -102,6 +111,27 @@ class ReportHelper
 
         );
         return compact('dataGroup');
+    }
+
+    public function getTotalSummary($shops, $startDate, $endDate)
+    {
+        $reports = [];
+        foreach ($shops as $shop) {
+            $report = $this->makeReport($shop, $startDate, $endDate);
+            array_push($reports, $report);
+        }
+
+        return $reports;
+    }
+
+    public function makeReport($shop, $startDate, $endDate)
+    {
+        DB::purge('sqlsrv');
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+        // read all dockets during the period
+        return ['data' => Docket::with("docketlines")->whereBetween('docket_date', [$this->yesterday, $this->today])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc'), 'shop' => $shop];
     }
 
     public function weekOfMonth($date)

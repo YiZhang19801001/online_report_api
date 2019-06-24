@@ -35,8 +35,6 @@ class ReportController extends Controller
 
         $shop = Shop::find($shopId);
 
-        $shops = $user->shops()->select('shop_name')->get();
-
         DB::purge();
 
         // set connection database ip in run time
@@ -47,7 +45,6 @@ class ReportController extends Controller
         switch ($meta) {
             case 'dailySummary':
                 $reports = $this->helper->getDailySummary($date);
-
                 break;
             case 'weeklySummary':
                 $reports = $this->helper->getWeeklySummary($date);
@@ -56,12 +53,41 @@ class ReportController extends Controller
                 break;
             case 'dataGroup':
                 $reports = $this->helper->getDataGroup($date);
+                break;
             default:
                 # code...
                 break;
         }
-        $reports['shops'] = $shops;
-        return response()->json(compact('reports'), 200);
 
+        $shops = $user->shops()->select('shop_name')->get();
+        $path = 'summary';
+        $reports['shops'] = $shops;
+        return response()->json(compact('reports', 'path'), 200);
+
+    }
+
+    public function store(Request $request)
+    {
+        #read inputs
+
+        $today = new \DateTime('now', new \DateTimeZone('Australia/Sydney'));
+
+        $startDate = date('y-m-d H:i:s', strtotime($request->input('startDate', $today->format('YYYY-MM-DD'))));
+        $endDate = date('y-m-d H:i:s', strtotime($request->input('endDate', $today->format('YYYY-MM-DD'))));
+
+        $user = $request->user();
+
+        // find shop according to inputs shop_ip
+        $shops = $user->shops()->get();
+
+        #call helper class to generate data
+        $reports = $this->helper->getTotalSummary($shops, $startDate, $endDate);
+
+        // use switch to filter the meta in controller make codes more readable in helper class
+
+        $shops = $user->shops()->select('shop_name')->get();
+        $path = 'totalSummary';
+        $reports['shops'] = $shops;
+        return response()->json(compact('reports', 'path'), 200);
     }
 }
