@@ -131,7 +131,7 @@ class ReportHelper
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
         // read all dockets during the period
-        $sql = Docket::with("docketlines")->whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $sql = Docket::with("docketlines")->whereBetween('docket_date', [new \DateTime($startDate, new \DateTimeZone('Australia/Sydney')), new \DateTime($endDate, new \DateTimeZone('Australia/Sydney'))])->where('transaction', "SA")->orWhere('transaction', "IV");
 
         return ['totalSales' => $sql->sum('total_inc'), 'totalTx' => $sql->count(), 'shop' => $shop];
     }

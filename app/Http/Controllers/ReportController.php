@@ -27,7 +27,6 @@ class ReportController extends Controller
 
         // find shop according to inputs shop_ip
         $shopId = isset($request->shopId) ? $request->shopId : $user->shops()->first()->shop_id;
-
         $check_if_shop_belong_to_user = $user->shops()->where('shops.shop_id', $shopId)->first();
         if ($check_if_shop_belong_to_user === null) {
             return response()->json(['errors' => ['Not authorized account to view this shop']], 400);
@@ -59,7 +58,7 @@ class ReportController extends Controller
                 break;
         }
 
-        $shops = $user->shops()->select('shop_name')->get();
+        $shops = $user->shops()->get();
         $path = 'summary';
         $reports['shops'] = $shops;
         return response()->json(compact('reports', 'path'), 200);
