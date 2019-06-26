@@ -38,6 +38,10 @@ class ReportController extends Controller
 
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+        \Config::set('database.connections.sqlsrv.username', $shop->username);
+        \Config::set('database.connections.sqlsrv.password', $shop->password);
+        \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+        \Config::set('database.connections.sqlsrv.port', $shop->port);
 
         #call helper class to generate data
         // use switch to filter the meta in controller make codes more readable in helper class
@@ -48,8 +52,7 @@ class ReportController extends Controller
             case 'weeklySummary':
                 $reports = $this->helper->getWeeklySummary($date);
                 break;
-            case 'monthlySummary':
-                break;
+
             case 'dataGroup':
                 $reports = $this->helper->getDataGroup($date);
                 break;
@@ -71,8 +74,8 @@ class ReportController extends Controller
 
         $today = new \DateTime('now', new \DateTimeZone('Australia/Sydney'));
 
-        $startDate = date('y-m-d H:i:s', strtotime($request->input('startDate', $today->format('YYYY-MM-DD'))));
-        $endDate = date('y-m-d H:i:s', strtotime($request->input('endDate', $today->format('YYYY-MM-DD'))));
+        $startDate = new \DateTime($request->startDate, new \DateTimeZone('Australia/Sydney'));
+        $endDate = new \DateTime($request->endDate, new \DateTimeZone('Australia/Sydney'));
 
         $user = $request->user();
 
@@ -87,5 +90,59 @@ class ReportController extends Controller
         $path = 'totalSummary';
         // $reports['shops'] = $shops;
         return response()->json(compact('reports', 'path'), 200);
+    }
+
+    public function update(Request $request, $id)
+    {
+        # read input
+        $startDate = new \DateTime($request->startDate, new \DateTimeZone('Australia/Sydney'));
+        $endDate = new \DateTime($request->endDate, new \DateTimeZone('Australia/Sydney'));
+        $reportType = isset($request->reportType) ? $request->reportType : 'product';
+        $user = $request->user();
+
+        $shopId = isset($request->shopId) ? $request->shopId : $user->shops()->first()->shop_id;
+        $check_if_shop_belong_to_user = $user->shops()->where('shops.shop_id', $shopId)->first();
+        if ($check_if_shop_belong_to_user === null) {
+            return response()->json(['errors' => ['Not authorized account to view this shop']], 400);
+        }
+
+        $shop = Shop::find($shopId);
+
+        DB::purge();
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+        \Config::set('database.connections.sqlsrv.username', $shop->username);
+        \Config::set('database.connections.sqlsrv.password', $shop->password);
+        \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+        \Config::set('database.connections.sqlsrv.port', $shop->port);
+
+        #call helper class to generate data
+        // use switch to filter the meta in controller make codes more readable in helper class
+        switch ($reportType) {
+            case 'product':
+                $reports = $this->helper->getReportByProduct($startDate, $endDate);
+                break;
+            case 'category':
+                $reports = $this->helper->getReportByCategory($startDate, $endDate);
+                break;
+            case 'day':
+                $reports = $this->helper->getReportByDay($startDate, $endDate);
+                break;
+            case 'hour':
+                $reports = $this->helper->getReportByHour($startDate, $endDate);
+                break;
+            case 'customer':
+                $reports = $this->helper->getReportByCustomer($startDate, $endDate);
+                break;
+            default:
+                $reports = $this->helper->getReportByCategory($startDate, $endDate);
+                break;
+        }
+
+        $shops = $user->shops()->get();
+
+        return response()->json(compact('reports'), 200);
+
     }
 }

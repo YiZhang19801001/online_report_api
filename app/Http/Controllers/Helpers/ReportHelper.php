@@ -80,36 +80,40 @@ class ReportHelper
 
     public function getDataGroup($dateTime)
     {
+
         $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
-        $date = $dt->format('Y-m-d');
-        $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
+        $startDate = $dt->format('Y-m-d');
+        $endDate = date('Y-m-d', strtotime($startDate . '+1 day'));
 
-        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $dataGroup = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->where('Stock.cat1', '!=', 'TASTE')
+            ->where('Stock.cat1', '!=', 'EXTRA')
+            ->selectRaw('DocketLine.size_level,sum(DocketLine.quantity) as quantity')
+            ->groupBy('DocketLine.size_level')
+            ->get();
 
-        $dockets = $sql->get();
-        $stock = Stock::where('custom1', '!=', null)->first();
-
-        $result_array = array($stock->custom1 => 0, $stock->custom2 => 0, 'extra' => 0, 'others' => 0);
-        foreach ($dockets as $docket) {
-            $docketLines = $docket->docketLines()->with('stock')->get();
-            foreach ($docketLines as $dl) {
-                if ($dl['stock']['cat1'] != 'TASTE' && $dl['stock']['cat1'] != 'EXTRA' && $dl['size_level'] != 0) {
-                    $result_array[$stock['custom' . $dl['size_level']]] += $dl['quantity'];
-                } else if ($dl['size_level'] == 0) {
-                    $result_array['others'] += $dl['quantity'];
-                } else {
-
-                    $result_array['extra'] += $dl['quantity'];
-                }
+        foreach ($dataGroup as $item) {
+            switch ($item->size_level) {
+                case 0:
+                    $item->size = 'others';
+                    break;
+                case 1:
+                    $item->size = Stock::where('custom1', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->cat1;
+                    break;
+                case 2:
+                    $item->size = Stock::where('custom2', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->cat1;
+                    break;
+                default:
+                    $item->size = 'extra';
+                    break;
             }
         }
-        $dataGroup = array(
-            ['size' => $stock->custom1, 'quantity' => $result_array[$stock->custom1]],
-            ['size' => $stock->custom2, 'quantity' => $result_array[$stock->custom2]],
-            ['size' => 'extra', 'quantity' => $result_array['extra']],
-            ['size' => 'others', 'quantity' => $result_array['others']],
 
-        );
         return compact('dataGroup');
     }
 
@@ -130,10 +134,32 @@ class ReportHelper
 
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
-        // read all dockets during the period
-        $sql = Docket::with("docketlines")->whereBetween('docket_date', [new \DateTime($startDate, new \DateTimeZone('Australia/Sydney')), new \DateTime($endDate, new \DateTimeZone('Australia/Sydney'))])->where('transaction', "SA")->orWhere('transaction', "IV");
+        \Config::set('database.connections.sqlsrv.username', $shop->username);
+        \Config::set('database.connections.sqlsrv.password', $shop->password);
+        \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+        \Config::set('database.connections.sqlsrv.port', $shop->port);
 
-        return ['totalSales' => $sql->sum('total_inc'), 'totalTx' => $sql->count(), 'shop' => $shop];
+        # read all dockets during the period
+        $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $totalSales = $sql->sum('total_inc');
+        $totalRefund = 0;
+        foreach ($sql->get() as $item) {
+            if ($item->total_inc < 0) {
+                $totalRefund += $item->total_inc;
+            }
+        }
+        $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount')
+            ->first();
+
+        return ['totalSales' => $totalSales, 'totalTx' => $sql->count(), 'shop' => $shop, 'gp' => $sqlResult->gp, 'discount' => $sqlResult->discount, 'gp_percentage' => $sqlResult->gp / $totalSales, 'totalRefund' => $totalRefund];
+        // return DocketLine::first();
+
     }
 
     public function weekOfMonth($date)
@@ -201,5 +227,194 @@ class ReportHelper
         $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->count();
 
         return array('sales' => $sales, 'tx' => $tx);
+    }
+
+    public function getReportByProduct($startDate, $endDate)
+    {
+        $docketLines = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+            ->groupBy('Stock.stock_id')
+            ->take(15)
+            ->get();
+
+        foreach ($docketLines as $docketLine) {
+            $stock = Stock::find($docketLine->stock_id);
+            $docketLine->name = $stock->description;
+
+        }
+
+        $ths = array(
+            ['type' => 'text', 'value' => 'name'],
+            ['type' => 'number', 'value' => 'quantity'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $dataFormat = array(
+            ['type' => 'text', 'value' => 'name'],
+            ['type' => 'number', 'value' => 'quantity'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $data = $docketLines;
+        // $sampleDocketLine = DocketLine::whereIn('docket_id', $docketIds)->first();
+
+        return compact('ths', 'dataFormat', 'data');
+    }
+
+    public function getReportByCategory($startDate, $endDate)
+    {
+        $categories = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+            ->groupBy('cat1')
+            ->get();
+        foreach ($categories as $category) {
+
+            $category->name = $category->cat1;
+        }
+
+        $ths = array(
+            ['type' => 'text', 'value' => 'name'],
+            ['type' => 'number', 'value' => 'quantity'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $dataFormat = array(
+            ['type' => 'text', 'value' => 'name'],
+            ['type' => 'number', 'value' => 'quantity'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $data = $categories;
+        // $sampleDocketLine = DocketLine::whereIn('docket_id', $docketIds)->first();
+        // $sampleStock = Stock::first();
+
+        return compact('ths', 'dataFormat', 'data');
+    }
+
+    public function getReportByDay($startDate, $endDate)
+    {
+        $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->select(DB::raw('CONVERT(VARCHAR(10), docket_date, 120) as date, gp,discount, total_inc'))->get();
+
+        $ths = array(
+            ['type' => 'text', 'value' => 'date'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $dataFormat = array(
+            ['type' => 'text', 'value' => 'date'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+
+        $data = array();
+
+        $docketGroups = $dockets->groupBy('date');
+
+        foreach ($docketGroups as $key => $value) {
+            $row['date'] = $key;
+            $row['gp'] = collect($value)->sum('gp');
+            $row['discount'] = collect($value)->sum('discount');
+            $row['amount'] = collect($value)->sum('total_inc');
+
+            array_push($data, $row);
+        }
+
+        // $sampleDocket = Docket::first();
+
+        return compact('ths', 'dataFormat', 'data');
+
+    }
+
+    public function getReportByHour($startDate, $endDate)
+    {
+
+        $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV")->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
+
+        $ths = array(
+            ['type' => 'text', 'value' => 'hour'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+        $dataFormat = array(
+            ['type' => 'text', 'value' => 'hour'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+        );
+
+        $data = array();
+
+        $docketGroups = $dockets->groupBy('hour');
+
+        foreach ($docketGroups as $key => $value) {
+            $row['hour'] = $key . ':00';
+            $row['gp'] = collect($value)->sum('gp');
+            $row['discount'] = collect($value)->sum('discount');
+            $row['amount'] = collect($value)->sum('total_inc');
+
+            array_push($data, $row);
+        }
+
+        // $sampleDocket = Docket::first();
+
+        return compact('ths', 'dataFormat', 'data');
+
+    }
+
+    public function getReportByCustomer($startDate, $endDate)
+    {
+
+        $ths = array(
+            ['type' => 'text', 'value' => 'id'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'gp%'],
+
+        );
+        $dataFormat = array(
+            ['type' => 'text', 'value' => 'customer_id'],
+            ['type' => 'number', 'value' => 'gp'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'gp_percentage'],
+
+        );
+
+        # read all dockets during the period
+        $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('transaction', "SA")->orWhere('transaction', "IV");
+        $totalSales = $sql->sum('total_inc');
+        $totalRefund = 0;
+        foreach ($sql->get() as $item) {
+            if ($item->total_inc < 0) {
+                $totalRefund += $item->total_inc;
+            }
+        }
+
+        $data = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->selectRaw('Docket.customer_id,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(Docket.total_inc) as amount')
+            ->groupBy('Docket.customer_id')
+            ->get();
+
+        foreach ($data as $value) {
+            $value->gp_percentage = $value->gp / $value->amount;
+        }
+
+        return compact('ths', 'dataFormat', 'data');
+
     }
 }
