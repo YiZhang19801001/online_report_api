@@ -31,6 +31,7 @@ class AuthController extends Controller
         ]);
         $user->save();
         return response()->json([
+            'code' => '0',
             'message' => 'Successfully created user!',
         ], 201);
     }
