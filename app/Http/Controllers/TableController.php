@@ -33,27 +33,49 @@ class TableController extends Controller
         \Config::set('database.connections.sqlsrv.port', $shop->port);
 
         $table_status = $request->input('table_status', null);
-
+        $site_id = $request->input('site_id', null);
         switch ($table_status) {
             case "0":
-                $tables = Table::where('table_status', 0)->get();
+                if ($site_id !== null) {
+                    $tables = Table::where('table_status', 0)->where('site_id', $site_id)->with('Site')->get();
+                } else {
+                    $tables = Table::where('table_status', 0)->with('Site')->get();
+                }
                 break;
             case "2":
-                $tables = Table::whereNotIn('table_status', [0, 1])->get();
+                if ($site_id !== null) {
+                    $tables = Table::whereNotIn('table_status', [0, 1])->where('site_id', $site_id)->with('Site')->get();
+                } else {
+                    $tables = Table::whereNotIn('table_status', [0, 1])->with('Site')->get();
+                }
                 break;
             case "3":
-                $tables = Table::where('table_status', 1)->get();
+                if ($site_id !== null) {
+                    $tables = Table::where('table_status', 1)->where('site_id', $site_id)->with('Site')->get();
+                } else {
+                    $tables = Table::where('table_status', 1)->with('Site')->get();
+                }
+
                 break;
             default:
-                $tables = Table::all();
+                if ($site_id !== null) {
+                    $tables = Table::where('site_id', $site_id)->with('Site')->get();
+                } else {
+                    $tables = Table::with('Site')->get();
+                }
                 break;
         }
 
-        $tableStats = array(
+        $tableStats = $site_id === null ? array(
             'available' => Table::where('table_status', 0)->count(),
             'occupied' => Table::whereNotIn('table_status', [0, 1])->count(),
             'reserve' => Table::where('table_status', 1)->count(),
             'all' => Table::all()->count(),
+        ) : array(
+            'available' => Table::where('site_id', $site_id)->where('table_status', 0)->count(),
+            'occupied' => Table::where('site_id', $site_id)->whereNotIn('table_status', [0, 1])->count(),
+            'reserve' => Table::where('site_id', $site_id)->where('table_status', 1)->count(),
+            'all' => Table::where('site_id', $site_id)->count(),
         );
 
         return response()->json(compact('tables', 'tableStats'), 200);
