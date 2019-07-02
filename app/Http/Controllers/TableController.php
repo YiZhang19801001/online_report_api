@@ -41,7 +41,7 @@ class TableController extends Controller
             case "2":
                 $tables = Table::whereNotIn('table_status', [0, 1])->get();
                 break;
-            case "1":
+            case "3":
                 $tables = Table::where('table_status', 1)->get();
                 break;
             default:
