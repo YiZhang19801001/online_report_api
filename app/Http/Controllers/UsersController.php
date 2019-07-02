@@ -52,17 +52,6 @@ class UsersController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -71,7 +60,15 @@ class UsersController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $user = User::find($id);
+        $user->cups_report = $request->input('cups_report', $user->cups_report);
+        $user->customer_report = $request->input('customer_report', $user->customer_report);
+        $user->tables_report = $request->input('tables_report', $user->tables_report);
+
+        $user->save();
+
+        return response()->json(['code' => '0', 'message' => 'success'], 200);
+
     }
 
     /**

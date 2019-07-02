@@ -77,6 +77,9 @@ class AuthController extends Controller
                 $tokenResult->token->expires_at
             )->toDateTimeString(),
             'shops' => $user->shops()->get(),
+            'cups_report' => $user->cups_report,
+            'tables_report' => $user->tables_report,
+            'customer_report' => $user->customer_report,
         ]);
     }
 
