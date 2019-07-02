@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Shop;
+use App\ShopToUser;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
@@ -32,9 +33,11 @@ class ShopController extends Controller
         $database_ip = $request->input('database_ip');
         $username = $request->input('username');
         $database_name = $request->input('database_name');
+        $password = $request->input('password');
         $port = $request->input('port');
 
-        $shop = Shop::create(compact('shop_name', 'database_ip', 'username', 'database_name', 'port'));
+        $shop = Shop::create(compact('shop_name', 'database_ip', 'username', 'database_name', 'port', 'password'));
+        $shopToUser = ShopToUser::create(['user_id' => $request->input('user_id'), 'shop_id' => $shop->shop_id]);
 
         return response()->json(['code' => 0, 'message' => 'success']);
 
@@ -56,6 +59,7 @@ class ShopController extends Controller
         $shop->database_ip = $request->input('database_ip');
         $shop->username = $request->input('username');
         $shop->database_name = $request->input('database_name');
+        $shop->password = $request->input('password');
         $shop->port = $request->input('port');
 
         #update shop

@@ -27,7 +27,6 @@ class TableController extends Controller
 
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
-        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
         \Config::set('database.connections.sqlsrv.username', $shop->username);
         \Config::set('database.connections.sqlsrv.password', $shop->password);
         \Config::set('database.connections.sqlsrv.database', $shop->database_name);
@@ -40,10 +39,10 @@ class TableController extends Controller
                 $tables = Table::where('table_status', 0)->get();
                 break;
             case "2":
-                $tables = Table::whereNotIn('table_status', [0, 9])->get();
+                $tables = Table::whereNotIn('table_status', [0, 1])->get();
                 break;
-            case "3":
-                $tables = Table::where('table_status', 9)->get();
+            case "1":
+                $tables = Table::where('table_status', 1)->get();
                 break;
             default:
                 $tables = Table::all();
@@ -52,8 +51,8 @@ class TableController extends Controller
 
         $tableStats = array(
             'available' => Table::where('table_status', 0)->count(),
-            'occupied' => Table::whereNotIn('table_status', [0, 9])->count(),
-            'reserve' => Table::where('table_status', 9)->count(),
+            'occupied' => Table::whereNotIn('table_status', [0, 1])->count(),
+            'reserve' => Table::where('table_status', 1)->count(),
             'all' => Table::all()->count(),
         );
 
