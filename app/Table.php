@@ -34,4 +34,9 @@ class Table extends Model
         "kb_id",
     ];
 
+    public function site()
+    {
+        return $this->hasOne('App\Site', 'site_id', 'site_id');
+    }
+
 }
