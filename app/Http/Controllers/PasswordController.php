@@ -39,6 +39,8 @@ class PasswordController extends Controller
         $user = User::find($id);
 
         $user->reset_password = 0;
+        $user->password = bcrypt('abc123');
+
         $user->save();
 
         return response()->json(['code' => '0', 'message' => 'password has been reset for customer: ' . $user->name], 200);
@@ -77,6 +79,10 @@ class PasswordController extends Controller
      */
     public function destroy($id)
     {
-        //
+        // $user = User::find($id);
+        // $password = bcrypt('abc123');
+
+        // return response()->json(['code' => '0', 'message' => 'your password success updated'], 200);
+
     }
 }
