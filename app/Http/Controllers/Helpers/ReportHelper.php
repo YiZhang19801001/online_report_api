@@ -103,10 +103,10 @@ class ReportHelper
                     $item->size = 'others';
                     break;
                 case 1:
-                    $item->size = Stock::where('custom1', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->cat1;
+                    $item->size = Stock::where('custom1', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->custom1;
                     break;
                 case 2:
-                    $item->size = Stock::where('custom2', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->cat1;
+                    $item->size = Stock::where('custom2', '!=', "")->where('custom2', '!=', null)->where('cat1', '!=', null)->first()->custom2;
                     break;
                 default:
                     $item->size = 'extra';
