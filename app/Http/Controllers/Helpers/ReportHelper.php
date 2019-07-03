@@ -105,7 +105,7 @@ class ReportHelper
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
             ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
             ->where('Stock.cat1', '!=', 'TASTE')
-            ->where('Stock.cat1', '!=', 'EXTRA')
+            ->whereRaw('Stock.cat <> EXTRA')
             ->get();
 
         foreach ($dataGroup as $item) {
