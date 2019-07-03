@@ -411,7 +411,7 @@ class ReportHelper
             ->get();
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount===0?1:$value->amount);
+            $value->gp_percentage = $value->gp / ($value->amount == 0 ? 1 : $value->amount);
         }
 
         return compact('ths', 'dataFormat', 'data');
