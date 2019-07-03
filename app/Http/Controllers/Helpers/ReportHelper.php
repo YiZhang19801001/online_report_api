@@ -98,6 +98,16 @@ class ReportHelper
             ->groupBy('DocketLine.size_level')
             ->get();
 
+        $dataGroupDetails = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->where('Stock.cat1', '!=', 'TASTE')
+            ->where('Stock.cat1', '!=', 'EXTRA')
+            ->where('Stock.cat1', '!=', null)->get();
+
         foreach ($dataGroup as $item) {
             switch ($item->size_level) {
                 case 0:
@@ -115,7 +125,7 @@ class ReportHelper
             }
         }
 
-        return compact('dataGroup');
+        return compact('dataGroup', 'dataGroupDetails');
     }
 
     public function getTotalSummary($shops, $startDate, $endDate)
