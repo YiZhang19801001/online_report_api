@@ -93,6 +93,7 @@ class ReportHelper
             ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
             ->where('Stock.cat1', '!=', 'TASTE')
             ->where('Stock.cat1', '!=', 'EXTRA')
+            ->where('Stock.cat1', '!=', null)
             ->selectRaw('DocketLine.size_level,sum(DocketLine.quantity) as quantity')
             ->groupBy('DocketLine.size_level')
             ->get();
@@ -100,7 +101,7 @@ class ReportHelper
         foreach ($dataGroup as $item) {
             switch ($item->size_level) {
                 case 0:
-                    $item->size = 'others';
+                    $item->size = 'others services';
                     break;
                 case 1:
                     $item->size = Stock::where('custom1', '!=', "")->where('custom1', '!=', null)->where('cat1', '!=', null)->first()->custom1;
@@ -109,7 +110,7 @@ class ReportHelper
                     $item->size = Stock::where('custom2', '!=', "")->where('custom2', '!=', null)->where('cat1', '!=', null)->first()->custom2;
                     break;
                 default:
-                    $item->size = 'extra';
+                    $item->size = 'unknown size';
                     break;
             }
         }
