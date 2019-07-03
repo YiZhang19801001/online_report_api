@@ -103,9 +103,9 @@ class ReportHelper
             ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
             ->where('Stock.stock_id', '>', 0)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-        // ->where('Docket.transaction', '"SA"')->orWhere('Docket.transaction', '"IV"')
-            ->where('Stock.cat1', '!=', 'TASTE')
-            ->where('Stock.cat1', "!=", '"EXTRA"')
+            ->where('Docket.transaction', "'SA'")->orWhere('Docket.transaction', "'IV'")
+            ->where('Stock.cat1', '!=', "'TASTE'")
+            ->where('Stock.cat1', "!=", "'EXTRA'")
             ->get();
 
         foreach ($dataGroup as $item) {
