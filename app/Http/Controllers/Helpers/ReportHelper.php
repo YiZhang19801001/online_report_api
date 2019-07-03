@@ -106,7 +106,7 @@ class ReportHelper
             ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
             ->where('Stock.cat1', '!=', 'TASTE')
             ->where('Stock.cat1', '!=', 'EXTRA')
-            ->where('Stock.cat1', '!=', null)->get();
+            ->get();
 
         foreach ($dataGroup as $item) {
             switch ($item->size_level) {
