@@ -90,22 +90,12 @@ class ReportHelper
             ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
             ->where('Stock.stock_id', '>', 0)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->whereIn('Docket.transaction', ["SA", "IV"])
             ->where('Stock.cat1', '!=', 'TASTE')
             ->where('Stock.cat1', '!=', 'EXTRA')
             ->where('Stock.cat1', '!=', null)
             ->selectRaw('DocketLine.size_level,sum(DocketLine.quantity) as quantity')
             ->groupBy('DocketLine.size_level')
-            ->get();
-
-        $dataGroupDetails = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ['SA', 'IV'])
-            ->where('Stock.cat1', '!=', "TASTE")
-            ->where('Stock.cat1', "!=", "EXTRA")
             ->get();
 
         foreach ($dataGroup as $item) {
