@@ -14,7 +14,7 @@ class UsersController extends Controller
      */
     public function index(Request $request)
     {
-        $users = User::where('user_type', 'CUSTOMER')->with('shops')->get();
+        $users = User::whereIn('user_type', ['CUSTOMER', 'HEAD'])->with('shops')->get();
         $code = "0";
         return response()->json(compact('code', 'users'), 200);
     }
