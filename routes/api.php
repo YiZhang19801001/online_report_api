@@ -36,3 +36,5 @@ Route::group([
 ], function () {
     Route::apiResources(['dockets' => 'DocketController', 'shops' => 'ShopController', 'reports' => 'ReportController', 'tables' => 'TableController', 'password' => 'PasswordController', 'shoptouser' => 'ShopToUserController', 'users' => 'UsersController', 'sites' => 'SiteController']);
 });
+
+Route::get('test/{id}', 'TableController@show');

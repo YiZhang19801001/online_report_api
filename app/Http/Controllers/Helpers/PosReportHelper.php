@@ -6,7 +6,7 @@ use App\Payments;
 use App\Stock;
 use \Illuminate\Support\Facades\DB;
 
-class ReportHelper
+class PosReportHelper
 {
     public function __construct()
     {

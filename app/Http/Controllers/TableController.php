@@ -80,4 +80,9 @@ class TableController extends Controller
 
         return response()->json(compact('tables', 'tableStats'), 200);
     }
+
+    public function show(Request $request, $id)
+    {
+        return response()->json(compact('id'), 200);
+    }
 }
