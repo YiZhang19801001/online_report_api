@@ -63,7 +63,7 @@ class ReportController extends Controller
 
             $reports['shops'] = PosHeadShop::where('shop_id', '>', 0)->get();
 
-        } else {
+        } else if ($user->user_type === 'CUSTOMER') {
             // find shop according to inputs shop_ip
             $shopId = isset($request->shopId) ? $request->shopId : $user->shops()->first()->shop_id;
             $check_if_shop_belong_to_user = $user->shops()->where('shops.shop_id', $shopId)->first();
@@ -119,7 +119,7 @@ class ReportController extends Controller
 
         $user = $request->user();
 
-        if ($user->user_type === 'BRANCH') {
+        if ($user->user_type === 'CUSTOMER') {
             // find shop according to inputs shop_ip
             $shops = $user->shops()->get();
 
@@ -128,7 +128,7 @@ class ReportController extends Controller
             // use switch to filter the meta in controller make codes more readable in helper class
 
             $shops = $user->shops()->select('shop_name')->get();
-        } else {
+        } else if ($user->user_type === 'HEAD') {
             // find shop according to inputs shop_ip
             $shopId = $user->shops()->first()->shop_id;
 
@@ -161,7 +161,7 @@ class ReportController extends Controller
         $reportType = isset($request->reportType) ? $request->reportType : 'product';
         $user = $request->user();
 
-        if ($user->user_type === 'BRANCH') {
+        if ($user->user_type === 'CUSTOMER') {
             $shopId = isset($request->shopId) ? $request->shopId : $user->shops()->first()->shop_id;
             $check_if_shop_belong_to_user = $user->shops()->where('shops.shop_id', $shopId)->first();
             if ($check_if_shop_belong_to_user === null) {
@@ -201,7 +201,7 @@ class ReportController extends Controller
                     $reports = $this->helper->getReportByCategory($startDate, $endDate);
                     break;
             }
-        } else {
+        } else if ($user->user_type === 'HEAD') {
             $shop = $user->shops()->first();
 
             DB::purge();
