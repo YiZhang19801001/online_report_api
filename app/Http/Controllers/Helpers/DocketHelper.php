@@ -49,7 +49,7 @@ class DocketHelper
         \Config::set('database.connections.sqlsrv.port', $shop->port);
 
         // read all dockets during the period
-        return Docket::with("docketlines")->whereBetween('docket_date', [$inputs['startDate'], $inputs['endDate']])->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
+        return Docket::with("docketlines")->whereBetween('docket_date', [$inputs['startDate'], $inputs['endDate']])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
 
     }
 }

@@ -28,8 +28,8 @@ class HeadReportHelper
         $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
 
-        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV");
-        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV");
+        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
 
         $sales = $sql->sum('total_inc');
         $compareSales = $compareSql->sum('total_inc');
@@ -50,8 +50,8 @@ class HeadReportHelper
         $year = $dt->format('Y');
         $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
         $endDate = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV")->count();
+        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
         $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
 
         $weeklyReports = array();
@@ -223,8 +223,8 @@ class HeadReportHelper
         $startDate = $week['from'];
         $endDate = $week['to'];
 
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV")->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->where('transaction', "SA")->orWhere('transaction', "IV")->count();
+        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
 
         return array('sales' => $sales, 'tx' => $tx);
     }
@@ -237,7 +237,7 @@ class HeadReportHelper
             ->where('Stock.stock_id', '>', 0)
             ->where('Docket.shop_id', $shopId)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->whereIn('Docket.transaction', ["SA", "IV"])
             ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
             ->groupBy('Stock.stock_id')
             ->take(15)
@@ -273,7 +273,7 @@ class HeadReportHelper
             ->where('Stock.stock_id', '>', 0)
             ->where('Docket.shop_id', $shopId)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->whereIn('Docket.transaction', ["SA", "IV"])
             ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
             ->groupBy('cat1')
             ->get();
@@ -407,7 +407,7 @@ class HeadReportHelper
             ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
             ->where('Stock.stock_id', '>', 0)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->where('Docket.transaction', "SA")->orWhere('Docket.transaction', "IV")
+            ->whereIn('Docket.transaction', ["SA", "IV"])
             ->selectRaw('Docket.customer_id,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(Docket.total_inc) as amount')
             ->groupBy('Docket.customer_id')
             ->get();
