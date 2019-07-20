@@ -49,8 +49,8 @@ class PosReportHelper
         $dt = self::makeDateTime($dtString);
         $month = $dt->format('m');
         $year = $dt->format('Y');
-        $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
-        $endDate = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $startDate = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
+        $endDate = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
         $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
         $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
         $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
@@ -185,8 +185,8 @@ class PosReportHelper
 
     public function getWeekDates($year, $week)
     {
-        $from = date("Y-m-d", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
-        $to = date("Y-m-d", strtotime("{$year}-W{$week}-7")); //Returns the date of sunday in week
+        $from = date("Y-m-d H:i:s", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
+        $to = date("Y-m-d H:i:s", strtotime("+23 hour +59 minutes +59 seconds", strtotime("{$year}-W{$week}-7"))); //Returns the date of sunday in week
 
         return array('from' => $from, 'to' => $to);
     }
@@ -197,8 +197,8 @@ class PosReportHelper
         $month = $dt->format("m");
         $day = $dt->format('d');
         $year = $dt->format('Y');
-        $firstDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
-        $lastDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $firstDayOfMonth = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
+        $lastDayOfMonth = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
         $firstDay = self::makeDateTime($firstDayOfMonth);
         $weekInYear = $firstDay->format('W');
 

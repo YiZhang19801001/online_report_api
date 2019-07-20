@@ -25,8 +25,8 @@ class HeadReportHelper
     {
         $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
-        $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
-        $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
+        $stopDate = date('Y-m-d H:i:s', strtotime($date . '+1 day'));
+        $yesterday = date('Y-m-d H:i:s', strtotime($date . '-1 day'));
 
         $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
         $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
@@ -42,17 +42,16 @@ class HeadReportHelper
     public function getWeeklySummary($dateTime, $shopId)
     {
         //todo:: clean up duplication codes in self::getWeeklyReport()
-        $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
+        $dtString = date('Y-m-d H:i:s', strtotime($dateTime . '-1 month'));
 
         $dt = self::makeDateTime($dtString);
         $month = $dt->format('m');
         $year = $dt->format('Y');
-        $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
-        $endDate = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $startDate = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
+        $endDate = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
         $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
         $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
-        $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
-
+        $comparison = ['date' => $startDate, 'endDate' => $endDate, 'sales' => $sales, 'tx' => $tx];
         $weeklyReports = array();
         $weeks = self::makeWeeks($dateTime);
         foreach ($weeks as $week) {
@@ -63,7 +62,7 @@ class HeadReportHelper
             array_push($weeklyReports, $report);
         }
 
-        return compact('weeklyReports', 'weeks', 'comparison');
+        return compact('weeklyReports', 'weeks', 'comparison', 'startDate', 'endDate');
     }
 
     public function reportsForPaymentMethod($start, $end, $shopId)
@@ -85,7 +84,7 @@ class HeadReportHelper
 
         $dt = new \DateTime($dateTime, new \DateTimeZone('Australia/Sydney'));
         $startDate = $dt->format('Y-m-d');
-        $endDate = date('Y-m-d', strtotime($startDate . '+1 day'));
+        $endDate = date('Y-m-d H:i:s', strtotime($startDate . '+1 day'));
 
         $dataGroup = DB::connection('sqlsrv')->table('DocketLine')
             ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
@@ -162,19 +161,10 @@ class HeadReportHelper
         // return $sqlResult;
     }
 
-    public function weekOfMonth($date)
-    {
-        //Get the first day of the month.
-        $firstOfMonthString = $date->format("Y-m-01");
-
-        //Apply above formula.
-        return $date->format('w') + 1 - $firstOfMonth->format('w');
-    }
-
     public function getWeekDates($year, $week)
     {
-        $from = date("Y-m-d", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
-        $to = date("Y-m-d", strtotime("{$year}-W{$week}-7")); //Returns the date of sunday in week
+        $from = date("Y-m-d H:i:s", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
+        $to = date("Y-m-d H:i:s", strtotime("+23 hour +59 minutes +59 seconds", strtotime("{$year}-W{$week}-7"))); //Returns the date of sunday in week
 
         return array('from' => $from, 'to' => $to);
     }
@@ -185,8 +175,8 @@ class HeadReportHelper
         $month = $dt->format("m");
         $day = $dt->format('d');
         $year = $dt->format('Y');
-        $firstDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, 01, $year));
-        $lastDayOfMonth = date('Y-m-d', mktime(0, 0, 0, $month, $dt->format('t'), $year));
+        $firstDayOfMonth = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
+        $lastDayOfMonth = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
         $firstDay = self::makeDateTime($firstDayOfMonth);
         $weekInYear = $firstDay->format('W');
 
@@ -223,8 +213,8 @@ class HeadReportHelper
         $startDate = $week['from'];
         $endDate = $week['to'];
 
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+        $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
 
         return array('sales' => $sales, 'tx' => $tx);
     }
