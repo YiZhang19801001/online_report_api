@@ -185,6 +185,8 @@ class PosReportHelper
 
     public function getWeekDates($year, $week)
     {
+        $week = $week * 1;
+        $week = $week < 10 ? "0" . $week : $week;
         $from = date("Y-m-d H:i:s", strtotime("{$year}-W{$week}-1")); //Returns the date of monday in week
         $to = date("Y-m-d H:i:s", strtotime("+23 hour +59 minutes +59 seconds", strtotime("{$year}-W{$week}-7"))); //Returns the date of sunday in week
 
