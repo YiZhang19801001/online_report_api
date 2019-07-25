@@ -169,7 +169,7 @@ class PosReportHelper
             ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount')
             ->first();
 
-        return ['totalSales' => $totalSales, 'totalTx' => $sql->count(), 'shop' => $shop, 'gp' => $sqlResult->gp, 'discount' => $sqlResult->discount, 'gp_percentage' => $sqlResult->gp / $totalSales == 0 ? 1 : $totalSales, 'totalRefund' => $totalRefund];
+        return ['totalSales' => $totalSales, 'totalTx' => $sql->count(), 'shop' => $shop, 'gp' => $sqlResult->gp, 'discount' => $sqlResult->discount, 'gp_percentage' => $totalSales == 0 ? 0 : $sqlResult->gp / $totalSales, 'totalRefund' => $totalRefund];
         // return DocketLine::first();
 
     }
