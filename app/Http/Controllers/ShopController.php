@@ -95,7 +95,7 @@ class ShopController extends Controller
         }
 
         Shop::destroy($id);
-        $shopToUsers = ShopToUser::where('shop_id', $id)->delete();
+        $shopToUsers = ShopToUser::where('shop_id', $id)->where('user_id', $user->user_id)->delete();
 
         return response()->json(['code' => 0, 'message' => 'success'], 200);
 
