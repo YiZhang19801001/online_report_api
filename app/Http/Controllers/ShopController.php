@@ -86,4 +86,21 @@ class ShopController extends Controller
 
         return response()->json(['code' => 0, 'message' => 'success', 'shop' => $shop], 200);
     }
+
+    public function delete(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->user_type === 'CUSTOMER') {
+            return response()->json(['code' => 401, 'message' => 'you are not authorized to update a store']);
+        }
+
+        Shop::destroy($id);
+        $shopToUsers = ShopToUser::where('shop_id', $id)->get();
+        foreach ($shopToUsers as $shopToUser) {
+            $shopToUser->delete();
+        }
+
+        return response()->json(['code' => 0, 'message' => 'success'], 200);
+
+    }
 }
