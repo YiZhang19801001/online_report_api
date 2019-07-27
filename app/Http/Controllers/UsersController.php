@@ -79,6 +79,14 @@ class UsersController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $user = User::find($id);
+        $shops = $user->shops()->get();
+        if (count($shops) == 0) {
+            $user->delete();
+            return response()->json(['code' => '0', 'message' => 'success delete'], 200);
+        } else {
+            return response()->json(['code' => '1', 'message' => 'you can remove this user, because there are shops linked with him.'], 200);
+        }
+
     }
 }

@@ -134,7 +134,7 @@ class HeadReportHelper
 
     public function getTotalSummary($shops, $startDate, $endDate)
     {
-
+        DB::enableQueryLog();
         $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
             ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
         // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
@@ -143,6 +143,17 @@ class HeadReportHelper
             ->whereIn('Docket.transaction', ["SA", "IV"])
             ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
             ->groupBy('Docket.shop_id')->get();
+
+        $sqlQuery = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+        // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+        // ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
+            ->groupBy('Docket.shop_id')->toSql();
+
+        \Log::debug(DB::getQueryLog());
 
         foreach ($sqlResult as $item) {
             # calculate totalRefund
