@@ -2,6 +2,8 @@
 namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
+use App\HistDocket;
+use App\HistPayments;
 use App\Payments;
 use App\Stock;
 use \Illuminate\Support\Facades\DB;
@@ -22,10 +24,36 @@ class PosReportHelper
      * @param [DateTime] $date
      * @return Object ['date','sales','numberOfTransactions','paymentMethod']
      */
-    public function getDailySummary($dateTime)
+    public function getDailySummary($dateTime, $user)
     {
+
         $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
+        $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
+
+        # if user is setting to generate reports from history table
+        if ($user->use_history == 0) {
+            $histDocket = HistDocket::where('date', $date)->first();
+            $compareHistDocket = HisDocket::where('date', $yesterday)->first();
+
+            # only if history records are existed, reports generate from [Hist-*]tables
+            if ($histDocket !== null && $compareHistDocket !== null) {
+
+                $sales = $histDocket->total_inc;
+                $numberOfTransactions = $histDocket->docket_count;
+                $compareSales = $compareHistDocket->total_inc;
+                $compareNumberOfTransactions = $compareHistDocket->docket_count;
+
+                $reportsForPaymentMethod = HistPayments::where('date', $date)
+                    ->selectRaw("sum(amount) as total, paymenttype, ROUND(sum(amount)/$sum,2) as percentage")
+                    ->groupBy('paymenttype')
+                    ->get();
+
+                return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
+            }
+        }
+
+        # generate reports by selecting data from [Docket] [DocketLine] [Payments]
         $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
 
