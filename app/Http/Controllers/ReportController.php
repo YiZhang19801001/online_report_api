@@ -86,14 +86,14 @@ class ReportController extends Controller
             // use switch to filter the meta in controller make codes more readable in helper class
             switch ($meta) {
                 case 'dailySummary':
-                    $reports = $this->helper->getDailySummary($date);
+                    $reports = $this->helper->getDailySummary($date, $user);
                     break;
                 case 'weeklySummary':
-                    $reports = $this->helper->getWeeklySummary($date);
+                    $reports = $this->helper->getWeeklySummary($date, $user);
                     break;
 
                 case 'dataGroup':
-                    $reports = $this->helper->getDataGroup($date);
+                    $reports = $this->helper->getDataGroup($date, $user);
                     break;
                 default:
                     # code...

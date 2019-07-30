@@ -27,72 +27,109 @@ class PosReportHelper
     public function getDailySummary($dateTime, $user)
     {
 
+        #read inputs & manuplate data
         $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
-        $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
-
-        # if user is setting to generate reports from history table
-        if ($user->use_history == 0) {
-            $histDocket = HistDocket::where('date', $date)->first();
-            $compareHistDocket = HisDocket::where('date', $yesterday)->first();
-
-            # only if history records are existed, reports generate from [Hist-*]tables
-            if ($histDocket !== null && $compareHistDocket !== null) {
-
-                $sales = $histDocket->total_inc;
-                $numberOfTransactions = $histDocket->docket_count;
-                $compareSales = $compareHistDocket->total_inc;
-                $compareNumberOfTransactions = $compareHistDocket->docket_count;
-
-                $reportsForPaymentMethod = HistPayments::where('date', $date)
-                    ->selectRaw("sum(amount) as total, paymenttype, ROUND(sum(amount)/$sum,2) as percentage")
-                    ->groupBy('paymenttype')
-                    ->get();
-
-                return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
-            }
-        }
-
-        # generate reports by selecting data from [Docket] [DocketLine] [Payments]
         $stopDate = date('Y-m-d', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d', strtotime($date . '-1 day'));
 
-        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->whereIn('transaction', ["SA", "IV"]);
-        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->whereIn('transaction', ["SA", "IV"]);
+        # CONDITION: use_history === true --> generate reports from history table
+        if ($user->use_history == 0) {
+            # try to find history record (will try to get those)
+            $histDocket = HistDocket::whereBetween('docket_date', [$date, $stopDate])->where('hist_type', 1)->first();
+            $compareHistDocket = HistDocket::whereBetween('docket_date', [$yesterday, $date])->where('hist_type', 1)->first();
 
-        $sales = $sql->sum('total_inc');
-        $compareSales = $compareSql->sum('total_inc');
-        $numberOfTransactions = $sql->count();
-        $compareNumberOfTransactions = $compareSql->count();
-        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
+            # if history record was found, read figures straight away from record
+            if ($histDocket !== null) {
 
-        return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
+                $sales = $histDocket->total_inc;
+                $numberOfTransactions = $histDocket->docket_count;
+                $reportsForPaymentMethod = HistPayments::whereBetween('docket_date', [$date, $stopDate])
+                    ->selectRaw("sum(amount) as total, paymenttype")
+                    ->groupBy('paymenttype')
+                    ->get();
+                $resource = "use_history"; // todo:: remove this line
+            } else { #else select figures from [Docket] table
+            $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->whereIn('transaction', ["SA", "IV"]);
+                $sales = $sql->sum('total_inc');
+                $numberOfTransactions = $sql->count();
+                $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
+
+            }
+
+            # if history record was found, read figures straight away from record
+            if ($compareHistDocket !== null) {
+                $compareSales = $compareHistDocket->total_inc;
+                $compareNumberOfTransactions = $compareHistDocket->docket_count;
+
+            } else { #else select figures from [Docket] table
+            $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->whereIn('transaction', ["SA", "IV"]);
+                $compareSales = $compareSql->sum('total_inc');
+                $compareNumberOfTransactions = $compareSql->count();
+            }
+
+        } else {
+            # CONDITION: use_history === false --> generate reports by selecting data from [Docket] [DocketLine] [Payments]
+            $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->whereIn('transaction', ["SA", "IV"]);
+            $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->whereIn('transaction', ["SA", "IV"]);
+
+            $sales = $sql->sum('total_inc');
+            $numberOfTransactions = $sql->count();
+
+            $compareSales = $compareSql->sum('total_inc');
+            $compareNumberOfTransactions = $compareSql->count();
+
+            $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate);
+            $resource = "not_use_history";
+        }
+
+        return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod', "resource", "histDocket");
     }
 
-    public function getWeeklySummary($dateTime)
+    public function getWeeklySummary($dateTime, $user)
     {
-        //todo:: clean up duplication codes in self::getWeeklyReport()
+        # read inputs preparing data.
         $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
-
         $dt = self::makeDateTime($dtString);
         $month = $dt->format('m');
         $year = $dt->format('Y');
         $startDate = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
         $endDate = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
-        $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
-
-        $weeklyReports = array();
         $weeks = self::makeWeeks($dateTime);
-        foreach ($weeks as $week) {
-            $report = self::getWeeklyReport($week);
-            $report['from'] = $week['from'];
-            $report['to'] = $week['to'];
-            $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to']);
-            array_push($weeklyReports, $report);
+        $weeklyReports = array();
+
+        # CONDITION: use_history === true --> generate reports from history table
+        if ($user->use_history == 0) {
+            # try to find weely report
+            $histDocket = HistDocket::whereBetween('docket_date', [$startDate, $endDate])->where('hist_type', 3)->first();
+            if ($histDocket != null) {
+                $comparison = ['date' => $startDate, 'sales' => $histDocket->total_inc, 'tx' => $histDocket->docket_count];
+                foreach ($weeks as $week) {
+                    $report = self::getWeeklyReport($week, $user->use_history);
+                    $report['from'] = $week['from'];
+                    $report['to'] = $week['to'];
+                    $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to']);
+                    array_push($weeklyReports, $report);
+                }
+            } else {
+                $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+                $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
+            }
+        } else {
+            $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+            $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
+            foreach ($weeks as $week) {
+                $report = self::getWeeklyReport($week, $user->use_history);
+                $report['from'] = $week['from'];
+                $report['to'] = $week['to'];
+                $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to']);
+                array_push($weeklyReports, $report);
+            }
         }
-        return compact('weeklyReports', 'weeks', 'comparison');
+
+        return compact('weeklyReports', 'weeks', 'comparison', 'histDocket');
     }
 
     public function reportsForPaymentMethod($start, $end)
@@ -260,13 +297,26 @@ class PosReportHelper
         return new \DateTime($string, new \DateTimeZone('Australia/Sydney'));
     }
 
-    public function getWeeklyReport($week)
+    public function getWeeklyReport($week, $use_history)
     {
         $startDate = $week['from'];
         $endDate = $week['to'];
 
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+        # CONDITION: $use_history true --> try to get weekly report from histDocket
+        if ($use_history == 0) {
+            $histDocket = HistDocket::whereBetween('docket_date', [$startDate, $endDate])->where('hist_type', 2)->first();
+            if ($histDocket != null) {
+                $sales = $histDocket->total_inc;
+                $tx = $histDocket->docket_count;
+            } else {
+                $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+            }
+        } else {
+
+            $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+        }
 
         return array('sales' => $sales, 'tx' => $tx);
     }

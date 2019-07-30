@@ -36,7 +36,8 @@ class HeadReportHelper
         $numberOfTransactions = $sql->count();
         $compareNumberOfTransactions = $compareSql->count();
         $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId);
-        return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod');
+        $resource = "posHead";
+        return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod', 'resource');
     }
 
     public function getWeeklySummary($dateTime, $shopId)
