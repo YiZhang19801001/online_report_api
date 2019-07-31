@@ -2,6 +2,8 @@
 namespace App\Http\Controllers\Helpers;
 
 use App\Docket;
+use App\HistDocket;
+use App\HistPayments;
 use App\Stock;
 use \Illuminate\Support\Facades\DB;
 
@@ -21,61 +23,122 @@ class HeadReportHelper
      * @param [DateTime] $date
      * @return Object ['date','sales','numberOfTransactions','paymentMethod']
      */
-    public function getDailySummary($dateTime, $shopId)
+    public function getDailySummary($dateTime, $shopId, $user)
     {
         $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
         $stopDate = date('Y-m-d H:i:s', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d H:i:s', strtotime($date . '-1 day'));
 
-        $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
-        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+        if ($user->use_history == 0) {
+            $histDocket = HistDocket::where('hist_type', 1)->whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->first();
+            if ($histDocket != null) {
+                $sales = $histDocket->total_inc;
+                $numberOfTransactions = $histDocket->docket_count;
 
-        $sales = $sql->sum('total_inc');
-        $compareSales = $compareSql->sum('total_inc');
-        $numberOfTransactions = $sql->count();
-        $compareNumberOfTransactions = $compareSql->count();
-        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId);
-        $resource = "posHead";
+                $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
+
+            } else {
+                $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+                $sales = $sql->sum('total_inc');
+                $numberOfTransactions = $sql->count();
+
+                $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
+
+            }
+
+            $compareHistDocket = HistDocket::where('hist_type', 1)->whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->first();
+            if ($compareHistDocket != null) {
+
+                $compareSales = $compareHistDocket->total_inc;
+                $compareNumberOfTransactions = $compareHistDocket->docket_count;
+
+            } else {
+                $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+                $compareSales = $compareSql->sum('total_inc');
+                $compareNumberOfTransactions = $compareSql->count();
+            }
+        } else {
+
+            $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+            $sales = $sql->sum('total_inc');
+            $numberOfTransactions = $sql->count();
+
+            $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
+            $compareSales = $compareSql->sum('total_inc');
+            $compareNumberOfTransactions = $compareSql->count();
+
+            $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
+        }
         return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod', 'resource');
+
     }
 
-    public function getWeeklySummary($dateTime, $shopId)
+    public function getWeeklySummary($dateTime, $shopId, $user)
     {
-        //todo:: clean up duplication codes in self::getWeeklyReport()
-        $dtString = date('Y-m-d H:i:s', strtotime($dateTime . '-1 month'));
-
+        # read inputs preparing data.
+        $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
         $dt = self::makeDateTime($dtString);
         $month = $dt->format('m');
         $year = $dt->format('Y');
         $startDate = date('Y-m-d H:i:s', mktime(0, 0, 0, $month, 01, $year));
         $endDate = date('Y-m-d H:i:s', mktime(23, 59, 59, $month, $dt->format('t'), $year));
-        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
-        $comparison = ['date' => $startDate, 'endDate' => $endDate, 'sales' => $sales, 'tx' => $tx];
-        $weeklyReports = array();
         $weeks = self::makeWeeks($dateTime);
-        foreach ($weeks as $week) {
-            $report = self::getWeeklyReport($week, $shopId);
-            $report['from'] = $week['from'];
-            $report['to'] = $week['to'];
-            $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $shopId);
-            array_push($weeklyReports, $report);
+        $weeklyReports = array();
+
+        # CONDITION: use_history === true --> generate reports from history table
+        if ($user->use_history == 0) {
+            # try to find weely report
+            $histDocket = HistDocket::where('shop_id', $shopId)->whereBetween('docket_date', [$startDate, $endDate])->where('hist_type', 3)->first();
+            if ($histDocket != null) {
+                $comparison = ['date' => $startDate, 'sales' => $histDocket->total_inc, 'tx' => $histDocket->docket_count];
+                foreach ($weeks as $week) {
+                    $report = self::getWeeklyReport($week, $shopId, $user->use_history);
+                    $report['from'] = $week['from'];
+                    $report['to'] = $week['to'];
+                    $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $shopId, $user);
+                    array_push($weeklyReports, $report);
+                }
+            } else {
+                $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+                $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
+            }
+        } else {
+            $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId)->sum('total_inc');
+            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId)->count();
+            $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
+            foreach ($weeks as $week) {
+                $report = self::getWeeklyReport($week, $shopId, $user->use_history);
+                $report['from'] = $week['from'];
+                $report['to'] = $week['to'];
+                $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $shopId, $user);
+                array_push($weeklyReports, $report);
+            }
         }
 
         return compact('weeklyReports', 'weeks', 'comparison', 'startDate', 'endDate');
     }
 
-    public function reportsForPaymentMethod($start, $end, $shopId)
+    public function reportsForPaymentMethod($start, $end, $shopId, $user)
     {
-        $groups = DB::connection('sqlsrv')->table('Payments')
-            ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
-            ->where('Docket.shop_id', $shopId)
-            ->whereBetween('Docket.docket_date', [$start, $end])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
-            ->groupBy('Payments.paymenttype')
-            ->get();
+        if ($user->use_history == 0) {
+            $groups = HistPayments::where('hist_type', 1)
+                ->whereBetween('docket_date', [$start, $end])
+                ->selectRaw("paymenttype,sum(amount) as total")
+                ->groupBy('paymenttype')
+                ->get();
+        } else {
+
+            $groups = DB::connection('sqlsrv')->table('Payments')
+                ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
+                ->where('Docket.shop_id', $shopId)
+                ->whereBetween('Docket.docket_date', [$start, $end])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
+                ->groupBy('Payments.paymenttype')
+                ->get();
+        }
 
         return $groups;
     }
@@ -133,44 +196,50 @@ class HeadReportHelper
         return compact('dataGroup', 'dataGroupDetails');
     }
 
-    public function getTotalSummary($shops, $startDate, $endDate)
+    public function getTotalSummary($shops, $startDate, $endDate, $user)
     {
-        DB::enableQueryLog();
-        $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-        // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-        // ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
-            ->groupBy('Docket.shop_id')->get();
 
-        $sqlQuery = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-        // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-        // ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
-            ->groupBy('Docket.shop_id')->toSql();
+        if ($user->use_history == 0) {
+            $sqlResult = HistDocket::where('hist_type', 1)
+                ->whereBetween('docket_date', [$startDate, $endDate])
+                ->selectRaw('shop_id, sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund')
+                ->groupBy('Docket.shop_id')->get();
 
-        \Log::debug(DB::getQueryLog());
-
-        foreach ($sqlResult as $item) {
-            # calculate totalRefund
-            $item->totalRefund = $item->totalSales - $item->absTotal;
-            $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
-            foreach ($shops as $shop) {
-                if ($shop->shop_id === $item->shop_id) {
-                    $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
+            foreach ($sqlResult as $item) {
+                # calculate totalRefund
+                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
+                foreach ($shops as $shop) {
+                    if ($shop->shop_id === $item->shop_id) {
+                        $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
+                    }
                 }
-            }
 
+            }
+        } else {
+
+            $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            // ->where('Stock.stock_id', '>', 0)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
+                ->groupBy('Docket.shop_id')->get();
+
+            foreach ($sqlResult as $item) {
+                # calculate totalRefund
+                $item->totalRefund = $item->totalSales - $item->absTotal;
+                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
+                foreach ($shops as $shop) {
+                    if ($shop->shop_id === $item->shop_id) {
+                        $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
+                    }
+                }
+
+            }
         }
 
         return collect($sqlResult)->values();
-        // return compact('startDate', 'endDate');
-        // return $sqlResult;
     }
 
     public function getWeekDates($year, $week)
@@ -222,30 +291,57 @@ class HeadReportHelper
         return new \DateTime($string, new \DateTimeZone('Australia/Sydney'));
     }
 
-    public function getWeeklyReport($week, $shopId)
+    public function getWeeklyReport($week, $shopId, $use_history)
     {
         $startDate = $week['from'];
         $endDate = $week['to'];
 
-        $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+        if ($use_history == 0) {
+            $histDocket = HistDocket::where('hist_type', 2)->where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->first();
+            if ($histDocket != null) {
+                $sales = $histDocket->total_inc;
+                $tx = $histDocket->docket_count;
+            } else {
+                $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+
+            }
+
+        } else {
+            $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+
+        }
 
         return array('sales' => $sales, 'tx' => $tx);
     }
 
-    public function getReportByProduct($startDate, $endDate, $shopId)
+    public function getReportByProduct($startDate, $endDate, $shopId, $user)
     {
-        $docketLines = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            ->where('Stock.stock_id', '>', 0)
-            ->where('Docket.shop_id', $shopId)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
-            ->groupBy('Stock.stock_id')
-            ->take(15)
-            ->get();
+
+        if ($user->use_history == 0) {
+            $docketLines = HistDocketLine::whereBetween('docket_date', [$startDate, $endDate])
+                ->where('hist_type', 1)
+                ->where('stock_id', '>', 0)
+                ->where('shop_id', $shopId)
+                ->selectRaw('stock_id,sum(quantity) as quantity,sum(sell_inc) as amount')
+                ->groupBy('stock_id')
+                ->take(25)
+                ->get();
+        } else {
+
+            $docketLines = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                ->where('Stock.stock_id', '>', 0)
+                ->where('Docket.shop_id', $shopId)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->groupBy('Stock.stock_id')
+                ->take(25)
+                ->get();
+        }
 
         foreach ($docketLines as $docketLine) {
             $stock = Stock::find($docketLine->stock_id);
@@ -264,23 +360,34 @@ class HeadReportHelper
             ['type' => 'number', 'value' => 'amount'],
         );
         $data = $docketLines;
-        // $sampleDocketLine = DocketLine::whereIn('docket_id', $docketIds)->first();
 
         return compact('ths', 'dataFormat', 'data');
     }
 
-    public function getReportByCategory($startDate, $endDate, $shopId)
+    public function getReportByCategory($startDate, $endDate, $shopId, $user)
     {
-        $categories = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            ->where('Stock.stock_id', '>', 0)
-            ->where('Docket.shop_id', $shopId)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
-            ->groupBy('cat1')
-            ->get();
+        if ($user->use_history == 0) {
+            $categories = DB::connection('sqlsrv')->table('HistDocketLine')
+                ->join('Stock', 'Stock.stock_id', '=', 'HistDocketLine.stock_id')
+                ->where('Stock.stock_id', '>', 0)
+                ->where('shop_id', $shopId)
+                ->whereBetween('HistDocketLine.docket_date', [$startDate, $endDate])
+                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(HistDocketLine.sell_inc) as amount')
+                ->groupBy('cat1')
+                ->get();
+        } else {
+
+            $categories = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                ->where('Stock.stock_id', '>', 0)
+                ->where('Docket.shop_id', $shopId)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->groupBy('cat1')
+                ->get();
+        }
         foreach ($categories as $category) {
 
             $category->name = $category->cat1;
@@ -297,13 +404,11 @@ class HeadReportHelper
             ['type' => 'number', 'value' => 'amount'],
         );
         $data = $categories;
-        // $sampleDocketLine = DocketLine::whereIn('docket_id', $docketIds)->first();
-        // $sampleStock = Stock::first();
 
         return compact('ths', 'dataFormat', 'data');
     }
 
-    public function getReportByDay($startDate, $endDate, $shopId)
+    public function getReportByDay($startDate, $endDate, $shopId, $user_id)
     {
         $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->select(DB::raw('CONVERT(VARCHAR(10), docket_date, 120) as date, gp,discount, total_inc'))->get();
 
@@ -339,11 +444,9 @@ class HeadReportHelper
 
     }
 
-    public function getReportByHour($startDate, $endDate, $shopId)
+    public function getReportByHour($startDate, $endDate, $shopId, $user)
     {
-
-        $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
-
+        $data = array();
         $ths = array(
             ['type' => 'text', 'value' => 'hour'],
             ['type' => 'number', 'value' => 'gp'],
@@ -357,26 +460,38 @@ class HeadReportHelper
             ['type' => 'number', 'value' => 'amount'],
         );
 
-        $data = array();
+        if ($user->use_history == 0) {
+            $dockets = HistDocket::where('shop_id', $shopId)->where('hist_type', 0)->whereBetween('docket_date', [$startDate, $endDate])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
 
-        $docketGroups = $dockets->groupBy('hour');
+            $docketGroups = $dockets->groupBy('hour');
 
-        foreach ($docketGroups as $key => $value) {
-            $row['hour'] = $key . ':00';
-            $row['gp'] = collect($value)->sum('gp');
-            $row['discount'] = collect($value)->sum('discount');
-            $row['amount'] = collect($value)->sum('total_inc');
+            foreach ($docketGroups as $key => $value) {
+                $row['hour'] = $key . ':00';
+                $row['gp'] = collect($value)->sum('gp');
+                $row['discount'] = collect($value)->sum('discount');
+                $row['amount'] = collect($value)->sum('total_inc');
+                array_push($data, $row);
+            }
+        } else {
 
-            array_push($data, $row);
+            $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
+            $docketGroups = $dockets->groupBy('hour');
+
+            foreach ($docketGroups as $key => $value) {
+                $row['hour'] = $key . ':00';
+                $row['gp'] = collect($value)->sum('gp');
+                $row['discount'] = collect($value)->sum('discount');
+                $row['amount'] = collect($value)->sum('total_inc');
+
+                array_push($data, $row);
+            }
         }
-
-        // $sampleDocket = Docket::first();
 
         return compact('ths', 'dataFormat', 'data');
 
     }
 
-    public function getReportByCustomer($startDate, $endDate, $shopId)
+    public function getReportByCustomer($startDate, $endDate, $shopId, $user)
     {
 
         $ths = array(
@@ -396,25 +511,35 @@ class HeadReportHelper
 
         );
 
-        # read all dockets during the period
-        $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId);
-        $totalSales = $sql->sum('total_inc');
-        $totalRefund = 0;
-        foreach ($sql->get() as $item) {
-            if ($item->total_inc < 0) {
-                $totalRefund += $item->total_inc;
+        if ($user->use_type) {
+            $data = HistDocket::where('hist_type', 1)
+                ->whereBetween('docket_date', [$startDate, $endDate])
+                ->where('shop_id', $shopId)
+                ->selectRaw('customer_id, sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
+                ->groupBy('customer_id')
+                ->get();
+        } else {
+            # read all dockets during the period
+            $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId);
+            $totalSales = $sql->sum('total_inc');
+            $totalRefund = 0;
+            foreach ($sql->get() as $item) {
+                if ($item->total_inc < 0) {
+                    $totalRefund += $item->total_inc;
+                }
             }
-        }
 
-        $data = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Docket.customer_id,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(Docket.total_inc) as amount')
-            ->groupBy('Docket.customer_id')
-            ->get();
+            $data = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                ->where('Stock.stock_id', '>', 0)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('Docket.customer_id,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(Docket.total_inc) as amount')
+                ->groupBy('Docket.customer_id')
+                ->get();
+
+        }
 
         foreach ($data as $value) {
             $value->gp_percentage = $value->gp / ($value->amount == 0 ? 1 : $value->amount);

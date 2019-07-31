@@ -124,7 +124,7 @@ class ReportController extends Controller
             $shops = $user->shops()->get();
 
             #call helper class to generate data
-            $reports = $this->helper->getTotalSummary($shops, $startDate, $endDate);
+            $reports = $this->helper->getTotalSummary($shops, $startDate, $endDate, $user);
             // use switch to filter the meta in controller make codes more readable in helper class
 
             $shops = $user->shops()->select('shop_name')->get();
@@ -145,7 +145,7 @@ class ReportController extends Controller
 
             $shops = PosHeadShop::where('shop_id', '>', 0)->get();
             #call helper class to generate data
-            $reports = $this->headHelper->getTotalSummary($shops, $startDate, $endDate);
+            $reports = $this->headHelper->getTotalSummary($shops, $startDate, $endDate, $user);
 
         }
         $path = 'totalSummary';
@@ -183,22 +183,22 @@ class ReportController extends Controller
             // use switch to filter the meta in controller make codes more readable in helper class
             switch ($reportType) {
                 case 'product':
-                    $reports = $this->helper->getReportByProduct($startDate, $endDate);
+                    $reports = $this->helper->getReportByProduct($startDate, $endDate, $user);
                     break;
                 case 'category':
-                    $reports = $this->helper->getReportByCategory($startDate, $endDate);
+                    $reports = $this->helper->getReportByCategory($startDate, $endDate, $user);
                     break;
                 case 'day':
-                    $reports = $this->helper->getReportByDay($startDate, $endDate);
+                    $reports = $this->helper->getReportByDay($startDate, $endDate, $user);
                     break;
                 case 'hour':
-                    $reports = $this->helper->getReportByHour($startDate, $endDate);
+                    $reports = $this->helper->getReportByHour($startDate, $endDate, $user);
                     break;
                 case 'customer':
-                    $reports = $this->helper->getReportByCustomer($startDate, $endDate);
+                    $reports = $this->helper->getReportByCustomer($startDate, $endDate, $user);
                     break;
                 default:
-                    $reports = $this->helper->getReportByCategory($startDate, $endDate);
+                    $reports = $this->helper->getReportByCategory($startDate, $endDate, $user);
                     break;
             }
         } else if ($user->user_type === 'HEAD') {
@@ -217,22 +217,22 @@ class ReportController extends Controller
             // use switch to filter the meta in controller make codes more readable in helper class
             switch ($reportType) {
                 case 'product':
-                    $reports = $this->headHelper->getReportByProduct($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByProduct($startDate, $endDate, $request->shopId, $user);
                     break;
                 case 'category':
-                    $reports = $this->headHelper->getReportByCategory($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByCategory($startDate, $endDate, $request->shopId, $user);
                     break;
                 case 'day':
-                    $reports = $this->headHelper->getReportByDay($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByDay($startDate, $endDate, $request->shopId, $user);
                     break;
                 case 'hour':
-                    $reports = $this->headHelper->getReportByHour($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByHour($startDate, $endDate, $request->shopId, $user);
                     break;
                 case 'customer':
-                    $reports = $this->headHelper->getReportByCustomer($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByCustomer($startDate, $endDate, $request->shopId, $user);
                     break;
                 default:
-                    $reports = $this->headHelper->getReportByCategory($startDate, $endDate, $request->shopId);
+                    $reports = $this->headHelper->getReportByCategory($startDate, $endDate, $request->shopId, $user);
                     break;
             }
         }
