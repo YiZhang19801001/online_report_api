@@ -32,8 +32,12 @@ class AuthController extends Controller
             // 'email' => $request->email,
             'password' => bcrypt($request->password),
         ]);
+
         $user->user_type = $request->input('user_type', 'CUSTOMER');
+        $user->use_history = $request->input('use_history', 1);
+
         $user->save();
+
         return response()->json([
             'code' => '0',
             'message' => 'Successfully created user!',
@@ -96,6 +100,7 @@ class AuthController extends Controller
         }
 
         $token->save();
+
         return response()->json([
             'access_token' => $tokenResult->accessToken,
             'token_type' => 'Bearer',

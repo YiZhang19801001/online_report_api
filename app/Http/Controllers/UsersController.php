@@ -65,6 +65,10 @@ class UsersController extends Controller
         $user->customer_report = $request->input('customer_report', $user->customer_report);
         $user->tables_report = $request->input('tables_report', $user->tables_report);
 
+        if (isset($request->use_history)) {
+            $user->use_history = $request->use_history;
+        }
+
         $user->save();
 
         return response()->json(['code' => '0', 'message' => 'success'], 200);
