@@ -64,6 +64,7 @@ class UsersController extends Controller
         $user->cups_report = $request->input('cups_report', $user->cups_report);
         $user->customer_report = $request->input('customer_report', $user->customer_report);
         $user->tables_report = $request->input('tables_report', $user->tables_report);
+        $user->export_report = $request->input('export_report', $user->export_report);
 
         if (isset($request->use_history)) {
             $user->use_history = $request->use_history;
