@@ -337,7 +337,7 @@ class HeadReportHelper
                 ->where('Docket.shop_id', $shopId)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('Stock.stock_id')
                 ->take(25)
                 ->get();
@@ -372,7 +372,7 @@ class HeadReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->where('shop_id', $shopId)
                 ->whereBetween('HistDocketLine.docket_date', [$startDate, $endDate])
-                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(HistDocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('cat1')
                 ->get();
         } else {
@@ -384,7 +384,7 @@ class HeadReportHelper
                 ->where('Docket.shop_id', $shopId)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('cat1')
                 ->get();
         }
@@ -532,11 +532,13 @@ class HeadReportHelper
             $data = DB::connection('sqlsrv')->table('DocketLine')
                 ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
                 ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                ->join('Customer', 'Customer.customer_id', '=', 'Docket.customer_id')
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Docket.customer_id,max(surname),sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('Docket.customer_id')
+                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
+
                 ->get();
 
         }

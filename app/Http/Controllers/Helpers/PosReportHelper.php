@@ -367,7 +367,7 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('Stock.stock_id')
                 ->take(15)
                 ->get();
@@ -411,7 +411,7 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('cat1')
                 ->get();
         }
@@ -526,7 +526,8 @@ class PosReportHelper
     {
 
         $ths = array(
-            ['type' => 'text', 'value' => 'surname'],
+            ['type' => 'text', 'value' => 'id'],
+            ['type' => 'text', 'value' => 'name'],
             ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
@@ -534,7 +535,8 @@ class PosReportHelper
 
         );
         $dataFormat = array(
-            ['type' => 'text', 'value' => 'surname'],
+            ['type' => 'text', 'value' => 'customer_id'],
+            ['type' => 'text', 'value' => 'full_name'],
             ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
@@ -545,8 +547,8 @@ class PosReportHelper
         if ($user->use_history == 0) {
             $data = HistDocket::where('hist_type', 1)
                 ->whereBetween('docket_date', [$startDate, $endDate])
-                ->selectRaw('customer_id,max(surname), sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
-                ->groupBy('customer_id')
+                ->selectRaw('customer_id,surname, sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
+                ->groupBy('customer_id', 'surname')
                 ->get();
 
         } else {
@@ -567,8 +569,8 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Docket.customer_id,Customer.surname,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('Docket.customer_id')
+                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
                 ->get();
         }
 
