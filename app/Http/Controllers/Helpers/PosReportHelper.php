@@ -567,7 +567,7 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Docket.customer_id,max(Customer.surname),sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->selectRaw('Docket.customer_id,Customer.surname,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('Docket.customer_id')
                 ->get();
         }
