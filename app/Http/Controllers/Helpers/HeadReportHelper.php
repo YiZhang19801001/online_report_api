@@ -495,7 +495,7 @@ class HeadReportHelper
     {
 
         $ths = array(
-            ['type' => 'text', 'value' => 'id'],
+            ['type' => 'text', 'value' => 'surname'],
             ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
@@ -503,7 +503,7 @@ class HeadReportHelper
 
         );
         $dataFormat = array(
-            ['type' => 'text', 'value' => 'customer_id'],
+            ['type' => 'text', 'value' => 'surname'],
             ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
@@ -515,7 +515,7 @@ class HeadReportHelper
             $data = HistDocket::where('hist_type', 1)
                 ->whereBetween('docket_date', [$startDate, $endDate])
                 ->where('shop_id', $shopId)
-                ->selectRaw('customer_id, sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
+                ->selectRaw('customer_id,surname,max(surname) ,sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
                 ->groupBy('customer_id')
                 ->get();
         } else {
@@ -535,7 +535,7 @@ class HeadReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Docket.customer_id,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(Docket.total_inc) as amount')
+                ->selectRaw('Docket.customer_id,max(surname),sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('Docket.customer_id')
                 ->get();
 
