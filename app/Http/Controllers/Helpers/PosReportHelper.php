@@ -443,15 +443,15 @@ class PosReportHelper
 
         $ths = array(
             ['type' => 'text', 'value' => 'date'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
         );
         $dataFormat = array(
             ['type' => 'text', 'value' => 'date'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
         );
 
         $data = array();
@@ -509,15 +509,15 @@ class PosReportHelper
 
         $ths = array(
             ['type' => 'text', 'value' => 'hour'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
         );
         $dataFormat = array(
             ['type' => 'text', 'value' => 'hour'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
         );
 
         return compact('ths', 'dataFormat', 'data');
@@ -530,18 +530,18 @@ class PosReportHelper
         $ths = array(
             ['type' => 'text', 'value' => 'id'],
             ['type' => 'text', 'value' => 'name'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'gp%'],
 
         );
         $dataFormat = array(
             ['type' => 'text', 'value' => 'customer_id'],
             ['type' => 'text', 'value' => 'full_name'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'discount'],
             ['type' => 'number', 'value' => 'amount'],
+            ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp'],
             ['type' => 'number', 'value' => 'gp_percentage'],
 
         );
