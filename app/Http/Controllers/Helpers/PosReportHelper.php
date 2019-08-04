@@ -367,8 +367,9 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.stock_id,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('Stock.stock_id')
+                ->selectRaw('Stock.stock_id,Stock.cost,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->groupBy('Stock.stock_id', 'Stock.cost')
+                ->orderBy('amount', 'desc')
                 ->take(15)
                 ->get();
 
@@ -413,6 +414,7 @@ class PosReportHelper
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('cat1')
+                ->orderBy('amount', 'desc')
                 ->get();
         }
 
@@ -571,6 +573,7 @@ class PosReportHelper
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
                 ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
+                ->orderBy('amount', 'desc')
                 ->get();
         }
 
