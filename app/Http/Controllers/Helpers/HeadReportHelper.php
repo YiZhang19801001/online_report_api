@@ -239,7 +239,6 @@ class HeadReportHelper
         }
 
         # need show shops havent any dockets by all features 0
-        var_dump($sqlResult);
         $sqlResult = $sqlResult->toArray();
         foreach ($shops as $shop) {
             $flag = false;
