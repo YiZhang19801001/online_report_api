@@ -239,25 +239,26 @@ class HeadReportHelper
         }
 
         # need show shops havent any dockets by all features 0
-        foreach ($sqlResult as $item) {
+
+        foreach ($shops as $shop) {
             $flag = false;
-            foreach ($shops as $shop) {
-                if($shop->shop_id === $item->shop_id){
+            foreach ($sqlResult as $item) {
+                if ($shop->shop_id === $item->shop_id) {
                     $flag = true;
                 }
             }
-            
-            if(!$flag){
-                array_push($sqlResult,array(
-                    'shop_id'=>$shop->shop_id,
-                    "totalRefund"=>0,
-                    "totalSales"=>0,
-                    "totalSales_ex"=>0,
-                    'totalTx'=>0,
-                    'discount'=>0,
-                    'gp'=>0,
-                    'gp_percentage'=>0,
-                    'shop'=>['shop_id'=>$shop->shop_id,'shop_name'=>$shop->shop_name],
+
+            if ($flag == false) {
+                array_push($sqlResult, array(
+                    'shop_id' => $shop->shop_id,
+                    "totalRefund" => 0,
+                    "totalSales" => 0,
+                    "totalSales_ex" => 0,
+                    'totalTx' => 0,
+                    'discount' => 0,
+                    'gp' => 0,
+                    'gp_percentage' => 0,
+                    'shop' => ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name],
                 ));
             }
         }
