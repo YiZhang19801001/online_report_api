@@ -243,6 +243,7 @@ class HeadReportHelper
         foreach ($shops as $shop) {
             $flag = false;
             foreach ($sqlResult as $item) {
+                $item = json_decode(json_encode($item));
                 if ($shop->shop_id === $item->shop_id) {
                     $flag = true;
                 }
