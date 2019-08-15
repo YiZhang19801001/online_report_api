@@ -247,7 +247,7 @@ class PosReportHelper
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->whereIn('transaction', ["SA", "IV"])
-                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc)) as absTotal')
+                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal')
                 ->first();
 
             # calculate totalRefund
@@ -402,7 +402,7 @@ class PosReportHelper
                 ->join('Stock', 'Stock.stock_id', '=', 'HistDocketLine.stock_id')
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('HistDocketLine.docket_date', [$startDate, $endDate])
-                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(HistDocketLine.sell_inc) as amount')
+                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(HistDocketLine.sell_inc * HistDocketLine.quantity) as amount')
                 ->groupBy('cat1')
                 ->get();
         } else {
