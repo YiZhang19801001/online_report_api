@@ -202,11 +202,11 @@ class HeadReportHelper
         if ($user->use_history == 0) {
             $sqlResult = HistDocket::where('hist_type', 1)
                 ->whereBetween('docket_date', [$startDate, $endDate])
-                ->selectRaw('shop_id, sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund')
+                ->selectRaw('shop_id, sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund, sum(total_ex) as totalSales_ex')
                 ->groupBy('Docket.shop_id')->get();
 
             foreach ($sqlResult as $item) {
-                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
+                $item->gp_percentage = $item->totalSales_ex != 0 ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id === $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
@@ -222,13 +222,13 @@ class HeadReportHelper
             // ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal')
+                ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
                 ->groupBy('Docket.shop_id')->get();
 
             foreach ($sqlResult as $item) {
                 # calculate totalRefund
-                $item->totalRefund = ($item->totalSales - $item->absTotal)/2;
-                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
+                $item->totalRefund = ($item->totalSales - $item->absTotal) / 2;
+                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id === $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
@@ -539,7 +539,7 @@ class HeadReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount,sum(DocketLine.sell_ex * DocketLine.quantity) as amount_ex')
                 ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
                 ->orderBy('amount', 'desc')
                 ->get();
@@ -547,7 +547,7 @@ class HeadReportHelper
         }
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount == 0 ? 1 : $value->amount);
+            $value->gp_percentage = $value->gp / ($value->amount_ex == 0 ? 1 : $value->amount_ex);
         }
 
         return compact('ths', 'dataFormat', 'data');

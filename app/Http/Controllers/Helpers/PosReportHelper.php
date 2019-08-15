@@ -226,7 +226,7 @@ class PosReportHelper
         if ($user->use_history == 0) {
             $sqlResult = HistDocket::whereBetween('docketDate', [$startDate, $endDate])
                 ->where('hist_type', 1)
-                ->selectRaw('sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund,')
+                ->selectRaw('sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund,,sum(total_ex) as totalSales_ex')
                 ->first();
 
             return [
@@ -235,7 +235,7 @@ class PosReportHelper
                 'shop' => $shop,
                 'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
                 'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
-                'gp_percentage' => $sqlResult->totalSales == 0 ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales,
+                'gp_percentage' => $sqlResult->totalSales_ex == 0 ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales_ex,
                 'totalRefund' => $sqlResult->totalRefund,
             ];
         } else {
@@ -247,13 +247,13 @@ class PosReportHelper
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->whereIn('transaction', ["SA", "IV"])
-                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal')
+                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
                 ->first();
 
             # calculate totalRefund
             $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
             # calculate gp_percentage
-            $sqlResult->gp_percentage = $sqlResult->totalSales != 0 ? $sqlResult->gp / $sqlResult->totalSales : 0;
+            $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
             return [
                 'totalSales' => $sqlResult->totalSales,
                 'totalTx' => $sqlResult->totalTx,
@@ -571,14 +571,14 @@ class PosReportHelper
                 ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount,sum(DocketLine.sell_ex * DocketLine.quantity) as amount_ex')
                 ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
                 ->orderBy('amount', 'desc')
                 ->get();
         }
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount == 0 ? 1 : $value->amount);
+            $value->gp_percentage = $value->gp / ($value->amount_ex == 0 ? 1 : $value->amount_ex);
         }
 
         return compact('ths', 'dataFormat', 'data');
