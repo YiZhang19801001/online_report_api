@@ -240,7 +240,7 @@ class HeadReportHelper
 
         # need show shops havent any dockets by all features 0
         $sqlResult = collect($sqlResult)->values();
-
+        var_dump($sqlResult);
         foreach ($shops as $shop) {
             $flag = false;
             foreach ($sqlResult as $item) {
