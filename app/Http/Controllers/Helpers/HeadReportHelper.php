@@ -239,6 +239,7 @@ class HeadReportHelper
         }
 
         # need show shops havent any dockets by all features 0
+        $sqlResult = collect($sqlResult)->values();
 
         foreach ($shops as $shop) {
             $flag = false;
@@ -263,7 +264,7 @@ class HeadReportHelper
             }
         }
 
-        return collect($sqlResult)->values();
+        return $sqlResult;
     }
 
     public function getWeekDates($year, $week)
