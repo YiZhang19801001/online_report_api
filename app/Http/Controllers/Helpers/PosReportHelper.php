@@ -251,7 +251,7 @@ class PosReportHelper
                 ->first();
 
             # calculate totalRefund
-            $sqlResult->totalRefund = $sqlResult->totalSales - $sqlResult->absTotal;
+            $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
             # calculate gp_percentage
             $sqlResult->gp_percentage = $sqlResult->totalSales != 0 ? $sqlResult->gp / $sqlResult->totalSales : 0;
             return [

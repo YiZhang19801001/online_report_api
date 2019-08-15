@@ -206,7 +206,6 @@ class HeadReportHelper
                 ->groupBy('Docket.shop_id')->get();
 
             foreach ($sqlResult as $item) {
-                # calculate totalRefund
                 $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id === $item->shop_id) {
@@ -228,7 +227,7 @@ class HeadReportHelper
 
             foreach ($sqlResult as $item) {
                 # calculate totalRefund
-                $item->totalRefund = $item->totalSales - $item->absTotal;
+                $item->totalRefund = ($item->totalSales - $item->absTotal)/2;
                 $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id === $item->shop_id) {
