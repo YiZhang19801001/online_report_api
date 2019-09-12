@@ -31,6 +31,21 @@ class ShopController extends Controller
             \Config::set('database.connections.sqlsrv.port', $shop->port);
 
             $shops = PosHeadShop::where('shop_id', '>', 0)->get();
+        } else if ($user->user_type === 'GIFTSHOPHEAD') {
+            $shopId = $user->shops()->first()->shop_id;
+
+            $shop = Shop::find($shopId);
+
+            DB::purge();
+
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+            \Config::set('database.connections.sqlsrv.username', $shop->username);
+            \Config::set('database.connections.sqlsrv.password', $shop->password);
+            \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+            \Config::set('database.connections.sqlsrv.port', $shop->port);
+
+            $shops = PosHeadShop::where('shop_id', '>', 0)->where('inactive', 0)->get();
         } else {
             $shops = Shop::all();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Helpers\GiftShopHeadHelper;
 use App\Http\Controllers\Helpers\HeadReportHelper;
 use App\Http\Controllers\Helpers\PosReportHelper;
 use App\PosHeadShop;
@@ -15,6 +16,7 @@ class ReportController extends Controller
     {
         $this->helper = new PosReporthelper();
         $this->headHelper = new HeadReportHelper();
+        $this->giftShopHeadHelper = new GiftShopHeadHelper();
     }
     public function index(Request $request)
     {
@@ -147,6 +149,24 @@ class ReportController extends Controller
             #call helper class to generate data
             $reports = $this->headHelper->getTotalSummary($shops, $startDate, $endDate, $user);
 
+        } else if ($user->user_type === "GIFTSHOPHEAD") {
+            // find shop according to inputs shop_ip
+            $shopId = $user->shops()->first()->shop_id;
+
+            $shop = Shop::find($shopId);
+
+            DB::purge();
+
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+            \Config::set('database.connections.sqlsrv.username', $shop->username);
+            \Config::set('database.connections.sqlsrv.password', $shop->password);
+            \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+            \Config::set('database.connections.sqlsrv.port', $shop->port);
+
+            $shops = PosHeadShop::where('shop_id', '>', 0)->where('inactive', 0)->get();
+            #call helper class to generate data
+            $reports = $this->giftShopHeadHelper->getTotalSummary($shops, $startDate, $endDate, $user);
         }
         $path = 'totalSummary';
         // $reports['shops'] = $shops;
