@@ -34,7 +34,7 @@ Route::group([
 Route::group([
     'middleware' => 'auth:api',
 ], function () {
-    Route::apiResources(['dockets' => 'DocketController', 'shops' => 'ShopController', 'reports' => 'ReportController', 'tables' => 'TableController', 'password' => 'PasswordController', 'shoptouser' => 'ShopToUserController', 'users' => 'UsersController', 'sites' => 'SiteController', 'sql' => 'SqlController']);
+    Route::apiResources(['dockets' => 'DocketController', 'shops' => 'ShopController', 'reports' => 'ReportController', 'tables' => 'TableController', 'password' => 'PasswordController', 'shoptouser' => 'ShopToUserController', 'users' => 'UsersController', 'sites' => 'SiteController', 'sql' => 'SqlController', 'tourgroup' => 'TourGroupController']);
 });
 
 Route::get('test/{id}', 'TableController@show');

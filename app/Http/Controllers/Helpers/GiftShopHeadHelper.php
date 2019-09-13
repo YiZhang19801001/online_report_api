@@ -6,6 +6,9 @@ use App\HistDocket;
 use App\HistPayments;
 use App\Stock;
 use \Illuminate\Support\Facades\DB;
+use App\TourGroup;
+use App\Shop;
+use App\Customer;
 
 class GiftShopHeadHelper
 {
@@ -196,7 +199,7 @@ class GiftShopHeadHelper
         return compact('dataGroup', 'dataGroupDetails');
     }
 
-    public function getTotalSummary($shops, $startDate, $endDate, $user)
+    public function getShopTotalSummary($shops, $startDate, $endDate, $user)
     {
         $reports = [];
 
@@ -207,6 +210,55 @@ class GiftShopHeadHelper
         }
 
         return $reports;
+    }
+
+    public function getGroupSalesSummary($shops,$startDate,$endDate,$groupId,$user)
+    {
+
+        # connect to pos head database;
+        $shopId = $user->shops()->first()->shop_id;
+
+        $shop = Shop::find($shopId);
+
+        DB::purge();
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+        \Config::set('database.connections.sqlsrv.username', $shop->username);
+        \Config::set('database.connections.sqlsrv.password', $shop->password);
+        \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+        \Config::set('database.connections.sqlsrv.port', $shop->port);
+
+        $group = TourGroup::find($groupId);
+        
+        $group_name = $group->group_name;
+        
+        $totalSales = 0;
+
+        $reports = [];
+
+        // should change the connection for each db than calculate summary for each shop
+        foreach ($shops as $shop) {
+            $shopReport = self::getGroupReports($startDate, $endDate, $shop,$groupId,$group_name);
+            if($shopReport!=null){
+                $customer = Customer::find($shopReport->customer_id);
+                $totalSales += $shopReport->totalSales;
+                array_push($reports, array(
+                    "sale"=>$shopReport->totalSales,
+                    "shopName"=>$shop->shop_name,
+                    "date"=>$customer->comments,
+                    "guide"=>$customer->addr3,
+                    "avg"=>$shopReport->totalSales/($group->pax ===0 ?1:$group->pax),
+                    // todo:: finish special logic
+                    "specialSale"=>[],
+                ));
+            }
+        }
+
+        $group->totalSales = $totalSales;
+        $group->avg = $totalSales/($group->pax ===0 ?1:$group->pax);
+
+        return ['groupSummary'=>$group,'reports'=>$reports];
     }
 
     public function getWeekDates($year, $week)
@@ -553,7 +605,6 @@ class GiftShopHeadHelper
             // ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->whereIn('transaction', ["SA", "IV"])
                 ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex,sum(DocketLine.sell_inc - DocketLine.sell_ex) as gst')
                 ->first();
 
@@ -603,5 +654,47 @@ class GiftShopHeadHelper
         // $shops = DB::connection('sqlsrv')->table('Docket')->whereBetween('docket_date', [$startDate, $endDate])->sum('total_inc');
         // return $shops;
 
+    }
+
+    /**
+     * 生成单个旅行团的报表
+     */
+    public function getGroupReports($startDate, $endDate, $shop,$groupId,$group_name)
+    {
+                # found database connect credentials
+                $db_path_array = explode(';', $shop->db_path);
+                $db_password = explode(';', $shop->db_password);
+        
+                $database_ip = explode('=', $db_path_array[0])[1];
+                $database_name = explode('=', $db_path_array[1])[1];
+                $username = explode('=', $db_password[0])[1];
+                $password = explode('=', $db_password[1])[1];
+
+        # generate group report for this shop
+        // try {
+            # connect to DB
+            DB::purge('sqlsrv');
+
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $database_ip);
+            \Config::set('database.connections.sqlsrv.username', $username);
+            \Config::set('database.connections.sqlsrv.password', $password);
+            \Config::set('database.connections.sqlsrv.database', $database_name);
+            \Config::set('database.connections.sqlsrv.port', 1433);           
+
+            $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                ->join('Customer','Docket.customer_id','=','Customer.customer_id')
+                // ->where('Docket.customer_id',$customer_id)
+                ->where('Customer.given_names',$group_name)
+                ->selectRaw('Customer.customer_id,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales')
+                ->groupBy('Customer.customer_id')
+                ->first();
+            
+                return $sqlResult;
+        // } catch (\Throwable $th) {
+        //     //throw $th;
+        //     return [];
+        // }
     }
 }

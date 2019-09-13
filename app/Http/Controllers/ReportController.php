@@ -155,6 +155,7 @@ class ReportController extends Controller
 
             $shop = Shop::find($shopId);
 
+
             DB::purge();
 
             // set connection database ip in run time
@@ -166,7 +167,21 @@ class ReportController extends Controller
 
             $shops = PosHeadShop::where('shop_id', '>', 0)->where('inactive', 0)->get();
             #call helper class to generate data
-            $reports = $this->giftShopHeadHelper->getTotalSummary($shops, $startDate, $endDate, $user);
+            switch ($request->reportType) {
+                case 'shop':
+                    $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);
+                    break;
+                case 'group':
+                    $groupId = $request->groupId;
+                    $reports = $this->giftShopHeadHelper->getGroupSalesSummary($shops, $startDate, $endDate, $groupId,$user);
+                    break;
+                case 'agent':
+                    $reports = $this->giftShopHeadHelper->getAgentSummary($shops, $startDate, $endDate, $user);
+                    break;
+                default:
+                    $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);
+                    break;
+            }
         }
         $path = 'totalSummary';
         // $reports['shops'] = $shops;
