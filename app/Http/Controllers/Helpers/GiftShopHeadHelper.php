@@ -535,53 +535,70 @@ class GiftShopHeadHelper
         $username = explode('=', $db_password[0])[1];
         $password = explode('=', $db_password[1])[1];
 
-        # connect to DB
-        DB::purge('sqlsrv');
+        try {
+            # connect to DB
+            DB::purge('sqlsrv');
 
-        // set connection database ip in run time
-        \Config::set('database.connections.sqlsrv.host', $database_ip);
-        \Config::set('database.connections.sqlsrv.username', $username);
-        \Config::set('database.connections.sqlsrv.password', $password);
-        \Config::set('database.connections.sqlsrv.database', $database_name);
-        \Config::set('database.connections.sqlsrv.port', 1433);
-        # get connection info
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $database_ip);
+            \Config::set('database.connections.sqlsrv.username', $username);
+            \Config::set('database.connections.sqlsrv.password', $password);
+            \Config::set('database.connections.sqlsrv.database', $database_name);
+            \Config::set('database.connections.sqlsrv.port', 1433);
+            # get connection info
 
-        $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-        // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-        // ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->whereIn('transaction', ["SA", "IV"])
-            ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex,sum(DocketLine.sell_inc - DocketLine.sell_ex) as gst')
-            ->first();
+            $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            // ->where('Stock.stock_id', '>', 0)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->whereIn('transaction', ["SA", "IV"])
+                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex,sum(DocketLine.sell_inc - DocketLine.sell_ex) as gst')
+                ->first();
 
-        # calculate totalRefund
-        $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
-        $sqlResult2 = DB::connection('sqlsrv')->table('DocketLine')
-            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-        // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-        // ->where('Stock.stock_id', '>', 0)
-            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-            ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->where('DocketLine.quantity', '<', 0)
-            ->selectRaw('sum(DocketLine.quantity) as refundQty')
-            ->first();
-        // ->get();
+            # calculate totalRefund
+            $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
+            $sqlResult2 = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            // ->where('Stock.stock_id', '>', 0)
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->where('DocketLine.quantity', '<', 0)
+                ->selectRaw('sum(DocketLine.quantity) as refundQty')
+                ->first();
+            // ->get();
 
-        # calculate gp_percentage
-        $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
-        return [
-            'totalSales' => $sqlResult->totalSales,
-            'totalTx' => $sqlResult->totalTx,
-            'shop' => $shop,
-            'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
-            'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
-            'gp_percentage' => $sqlResult->gp_percentage,
-            'gst' => $sqlResult->gst,
-            'totalRefund' => $sqlResult->totalRefund,
-            'refundQty' => $sqlResult2->refundQty,
-        ];
+            # calculate gp_percentage
+            $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
+            return [
+                'totalSales' => $sqlResult->totalSales,
+                'totalTx' => $sqlResult->totalTx,
+                'shop' => $shop,
+                'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
+                'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
+                'gp_percentage' => $sqlResult->gp_percentage,
+                'gst' => $sqlResult->gst,
+                'totalRefund' => $sqlResult->totalRefund,
+                'refundQty' => $sqlResult2->refundQty,
+                'connected' => true,
+
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'totalSales' => 0,
+                'totalTx' => 0,
+                'shop' => $shop,
+                'gp' => 0,
+                'discount' => 0,
+                'gp_percentage' => 0,
+                'gst' => 0,
+                'totalRefund' => 0,
+                'refundQty' => 0,
+                'connected' => false,
+            ];
+        }
 
         // $shops = DB::connection('sqlsrv')->table('Docket')->whereBetween('docket_date', [$startDate, $endDate])->sum('total_inc');
         // return $shops;
