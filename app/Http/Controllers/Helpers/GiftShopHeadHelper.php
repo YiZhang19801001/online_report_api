@@ -252,6 +252,16 @@ class GiftShopHeadHelper
                     // todo:: finish special logic
                     "specialSale"=>[],
                 ));
+            }else{
+                array_push($reports, array(
+                    "sale"=>0,
+                    "shopName"=>$shop->shop_name,
+                    "date"=>"",
+                    "guide"=>"",
+                    "avg"=>0,
+                    // todo:: finish special logic
+                    "specialSale"=>[],
+                ));
             }
         }
 
