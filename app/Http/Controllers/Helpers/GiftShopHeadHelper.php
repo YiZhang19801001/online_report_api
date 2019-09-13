@@ -251,6 +251,7 @@ class GiftShopHeadHelper
                     "avg"=>$shopReport->totalSales/($group->pax ===0 ?1:$group->pax),
                     // todo:: finish special logic
                     "specialSale"=>[],
+                    "comments"=>$customer->notes,
                 ));
             }else{
                 array_push($reports, array(
@@ -261,6 +262,7 @@ class GiftShopHeadHelper
                     "avg"=>0,
                     // todo:: finish special logic
                     "specialSale"=>[],
+                    "comments"=>"",
                 ));
             }
         }
