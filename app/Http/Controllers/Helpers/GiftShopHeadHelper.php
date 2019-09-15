@@ -623,7 +623,8 @@ class GiftShopHeadHelper
 
     }
 
-    public function getReportByCustomer($startDate, $endDate, $shop, $user)
+
+    public function getReportByStaff($startDate, $endDate, $shop, $user)
     {
             # found database connect credentials
             $db_path_array = explode(';', $shop->db_path);
@@ -647,15 +648,60 @@ class GiftShopHeadHelper
             \Config::set('database.connections.sqlsrv.port', 1433);
 
 
-            # read all dockets during the period
-            $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"]);
-            $totalSales = $sql->sum('total_inc');
-            $totalRefund = 0;
-            foreach ($sql->get() as $item) {
-                if ($item->total_inc < 0) {
-                    $totalRefund += $item->total_inc;
-                }
-            }
+            $data = DB::connection('sqlsrv')->table('DocketLine')
+                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                ->join('staff', 'staff.staff_id', '=', 'Docket.staff_id')
+                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                ->whereIn('Docket.transaction', ["SA", "IV"])
+                ->selectRaw('staff.barcode,(staff.given_names + staff.surname) as groupName,count(DocketLine.line_id) as count,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp , sum(DocketLine.sell_inc * DocketLine.quantity) as sales')
+                ->groupBy('staff.barcode', 'staff.surname', 'staff.given_names')
+                ->orderBy('sales', 'desc')
+                ->get();
+        
+       
+        $totalCount = 0;
+        $totalSales = 0;
+        $totalGp = 0;
+        
+
+        foreach ($data as $value) {
+            $value->gp_percentage = $value->gp / ($value->sales == 0 ? 1 : $value->sales);
+            $totalCount += $value->count;
+            $totalSales += $value->sales;
+            $totalGp += $value->gp;
+        }
+
+        $total = ['sales'=>$totalSales, 'count'=>$totalCount, 'gp'=>$totalGp,'gp_percentage'=>$totalGp/($totalSales==0?1:$totalSales)];
+
+        return ["summary"=>$total,"details"=>$data];
+
+    }
+
+    
+
+    public function getReportByCustomer($startDate, $endDate, $shop, $user)
+    {
+            # found database connect credentials
+            $db_path_array = explode(';', $shop->db_path);
+            $db_password = explode(';', $shop->db_password);
+    
+            $database_ip = explode('=', $db_path_array[0])[1];
+            $database_name = explode('=', $db_path_array[1])[1];
+            $username = explode('=', $db_password[0])[1];
+            $password = explode('=', $db_password[1])[1];
+    
+            # generate group report for this shop
+            // try {
+            # connect to DB
+            DB::purge('sqlsrv');
+    
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $database_ip);
+            \Config::set('database.connections.sqlsrv.username', $username);
+            \Config::set('database.connections.sqlsrv.password', $password);
+            \Config::set('database.connections.sqlsrv.database', $database_name);
+            \Config::set('database.connections.sqlsrv.port', 1433);
+
 
             $data = DB::connection('sqlsrv')->table('DocketLine')
                 ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')

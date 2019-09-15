@@ -342,7 +342,7 @@ class ReportController extends Controller
                     break;
 
                 case 'staff':
-                    $reports = $this->giftShopHeadHelper->getReportByHour($startDate, $endDate, $posHeadShop, $user);
+                    $reports = $this->giftShopHeadHelper->getReportByStaff($startDate, $endDate, $posHeadShop, $user);
                     break;
                 case 'customer':
                     $reports = $this->giftShopHeadHelper->getReportByCustomer($startDate, $endDate, $posHeadShop, $user);
