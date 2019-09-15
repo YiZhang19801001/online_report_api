@@ -35,7 +35,6 @@ class ShopController extends Controller
             $shopId = $user->shops()->first()->shop_id;
 
             $shop = Shop::find($shopId);
-
             DB::purge();
 
             // set connection database ip in run time

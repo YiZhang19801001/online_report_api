@@ -105,6 +105,42 @@ class ReportController extends Controller
             $shops = $user->shops()->get();
             $path = 'summary';
             $reports['shops'] = $shops;
+        } else if ($user->user_type === 'GIFTSHOPHEAD') {
+            $shopId = $user->shops()->first()->shop_id;
+            $shop = Shop::find($shopId);
+
+            DB::purge();
+
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+            \Config::set('database.connections.sqlsrv.username', $shop->username);
+            \Config::set('database.connections.sqlsrv.password', $shop->password);
+            \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+            \Config::set('database.connections.sqlsrv.port', $shop->port);
+            $reports['shops'] = PosHeadShop::where('shop_id', '>', 0)->get();
+
+            #call helper class to generate data
+            // use switch to filter the meta in controller make codes more readable in helper class
+            switch ($meta) {
+                case 'dailySummary':
+                    $posHeadShop = PosHeadShop::find($request->shopId);
+                    $reports = $this->giftShopHeadHelper->getDailySummary($date, $posHeadShop, $user);
+                    break;
+                case 'weeklySummary':
+                    $reports = $this->giftShopHeadHelper->getWeeklySummary($date, $request->shopId, $user);
+                    break;
+
+                case 'dataGroup':
+                    $reports = $this->giftShopHeadHelper->getDataGroup($date, $request->shopId, $user);
+                    break;
+                default:
+                    $reports = array();
+                    break;
+            }
+
+            // this variable is not used currently
+            $path = 'summary';
+
         }
 
         return response()->json(compact('reports', 'path'), 200);
@@ -178,7 +214,8 @@ class ReportController extends Controller
                     // $groupNames = TourGroup::
                     //     whereBetween('date_end', [$startDate, $endDate])
                     //     ->select('group_name')->get();
-                    $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user);
+                    $agentName = $request->input("agentName", "");
+                    $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user, $agentName);
                     break;
                 default:
                     $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);

@@ -8,6 +8,7 @@ class PosHeadShop extends Model
 {
     protected $connection = "sqlsrv";
     protected $table = "Shop";
+    protected $primaryKey = "shop_id";
 
     public $timestamps = false;
 }

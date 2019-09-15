@@ -9,6 +9,7 @@ use \Illuminate\Support\Facades\DB;
 use App\TourGroup;
 use App\Shop;
 use App\Customer;
+use App\PosHeadShop;
 
 class GiftShopHeadHelper
 {
@@ -26,53 +27,46 @@ class GiftShopHeadHelper
      * @param [DateTime] $date
      * @return Object ['date','sales','numberOfTransactions','paymentMethod']
      */
-    public function getDailySummary($dateTime, $shopId, $user)
+    public function getDailySummary($dateTime, $shop, $user)
     {
         $dt = self::makeDateTime($dateTime);
         $date = $dt->format('Y-m-d');
         $stopDate = date('Y-m-d H:i:s', strtotime($date . '+1 day'));
         $yesterday = date('Y-m-d H:i:s', strtotime($date . '-1 day'));
 
-        if ($user->use_history == 0) {
-            $histDocket = HistDocket::where('hist_type', 1)->whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->first();
-            if ($histDocket != null) {
-                $sales = $histDocket->total_inc;
-                $numberOfTransactions = $histDocket->docket_count;
+        // $shop = PosHeadShop::find($shopId);
 
-                $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
+        # found database connect credentials
+        $db_path_array = explode(';', $shop->db_path);
+        $db_password = explode(';', $shop->db_password);
 
-            } else {
-                $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
-                $sales = $sql->sum('total_inc');
-                $numberOfTransactions = $sql->count();
+        $database_ip = explode('=', $db_path_array[0])[1];
+        $database_name = explode('=', $db_path_array[1])[1];
+        $username = explode('=', $db_password[0])[1];
+        $password = explode('=', $db_password[1])[1];
 
-                $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
+        # generate group report for this shop
+        // try {
+        # connect to DB
+        DB::purge('sqlsrv');
 
-            }
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $database_ip);
+        \Config::set('database.connections.sqlsrv.username', $username);
+        \Config::set('database.connections.sqlsrv.password', $password);
+        \Config::set('database.connections.sqlsrv.database', $database_name);
+        \Config::set('database.connections.sqlsrv.port', 1433);    
+        
+        $sql = Docket::whereBetween('docket_date', [$date, $stopDate]);
+        $sales = $sql->sum('total_inc');
+        $numberOfTransactions = $sql->count();
+        
+        $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date]);
+        $compareSales = $compareSql->sum('total_inc');
+        $compareNumberOfTransactions = $compareSql->count();
 
-            $compareHistDocket = HistDocket::where('hist_type', 1)->whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->first();
-            if ($compareHistDocket != null) {
-
-                $compareSales = $compareHistDocket->total_inc;
-                $compareNumberOfTransactions = $compareHistDocket->docket_count;
-
-            } else {
-                $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
-                $compareSales = $compareSql->sum('total_inc');
-                $compareNumberOfTransactions = $compareSql->count();
-            }
-        } else {
-
-            $sql = Docket::whereBetween('docket_date', [$date, $stopDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
-            $sales = $sql->sum('total_inc');
-            $numberOfTransactions = $sql->count();
-
-            $compareSql = Docket::whereBetween('docket_date', [$yesterday, $date])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"]);
-            $compareSales = $compareSql->sum('total_inc');
-            $compareNumberOfTransactions = $compareSql->count();
-
-            $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $shopId, $user);
-        }
+        $reportsForPaymentMethod = self::reportsForPaymentMethod($date, $stopDate, $user);
+        
         return compact('date', 'stopDate', 'sales', 'compareSales', 'compareNumberOfTransactions', 'numberOfTransactions', 'reportsForPaymentMethod', 'resource');
 
     }
@@ -123,25 +117,16 @@ class GiftShopHeadHelper
         return compact('weeklyReports', 'weeks', 'comparison', 'startDate', 'endDate');
     }
 
-    public function reportsForPaymentMethod($start, $end, $shopId, $user)
+    public function reportsForPaymentMethod($start, $end, $user)
     {
-        if ($user->use_history == 0) {
-            $groups = HistPayments::where('hist_type', 1)
-                ->whereBetween('docket_date', [$start, $end])
-                ->selectRaw("paymenttype,sum(amount) as total")
-                ->groupBy('paymenttype')
-                ->get();
-        } else {
-
-            $groups = DB::connection('sqlsrv')->table('Payments')
-                ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
-                ->where('Docket.shop_id', $shopId)
-                ->whereBetween('Docket.docket_date', [$start, $end])
-                ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
-                ->groupBy('Payments.paymenttype')
-                ->get();
-        }
+        $groups = DB::connection('sqlsrv')->table('Payments')
+            ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
+            ->whereBetween('Docket.docket_date', [$start, $end])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
+            ->groupBy('Payments.paymenttype')
+            ->get();
+   
 
         return $groups;
     }
@@ -274,14 +259,14 @@ class GiftShopHeadHelper
     }
 
 
-    public function getAgentSalesSummary($shops, $startDate, $endDate, $user)
+    public function getAgentSalesSummary($shops, $startDate, $endDate, $user,$agentName)
     {
         $reports = [];
         
         # selected reports group by tour group name and tour agent
         // should change the connection for each db than calculate summary for each shop
         foreach ($shops as $shop) {
-            $agentReport = self::getAgentReport($startDate, $endDate, $shop);
+            $agentReport = self::getAgentReport($startDate, $endDate, $shop,$agentName);
             if($agentReport!=null){
                 $agentReport = json_decode(json_encode($agentReport));
                 foreach ($agentReport->reports as  $agentReportItem) {
@@ -773,7 +758,7 @@ class GiftShopHeadHelper
     /**
      * 生成旅行社的报表
      */
-    public function getAgentReport($startDate, $endDate, $shop)
+    public function getAgentReport($startDate, $endDate, $shop,$agentName)
     {
                 # found database connect credentials
                 $db_path_array = explode(';', $shop->db_path);
@@ -787,7 +772,6 @@ class GiftShopHeadHelper
                 // try {
                     # connect to DB
                     DB::purge('sqlsrv');
-        
                     // set connection database ip in run time
                     \Config::set('database.connections.sqlsrv.host', $database_ip);
                     \Config::set('database.connections.sqlsrv.username', $username);
@@ -795,13 +779,23 @@ class GiftShopHeadHelper
                     \Config::set('database.connections.sqlsrv.database', $database_name);
                     \Config::set('database.connections.sqlsrv.port', 1433); 
 
-                    $sqlResult = DB::connection('sqlsrv')->table('Docket')
-                    ->join('Customer','Docket.customer_id','=','Customer.customer_id')
-                    ->whereBetween('Customer.date_modified',[$startDate,$endDate])
-                    // ->whereIn('Customer.given_names',$groupNames)
-                    ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
-                    ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
-                    ->get();
+                    if($agentName==""){
+                        $sqlResult = DB::connection('sqlsrv')->table('Docket')
+                                        ->join('Customer','Docket.customer_id','=','Customer.customer_id')
+                                        ->whereBetween('Customer.date_modified',[$startDate,$endDate])
+                                        // ->whereIn('Customer.given_names',$groupNames)
+                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
+                                        ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
+                                        ->get();
+                    }else{
+                        $sqlResult = DB::connection('sqlsrv')->table('Docket')
+                                        ->join('Customer','Docket.customer_id','=','Customer.customer_id')
+                                        ->whereBetween('Customer.date_modified',[$startDate,$endDate])
+                                        ->where('Customer.surname',$agentName)
+                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
+                                        ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
+                                        ->get();
+                    }
                      
                     # generate readable shop summary report
                     return ["shopName"=>$shop->barcode,"reports"=>$sqlResult];
