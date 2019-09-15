@@ -246,7 +246,7 @@ class GiftShopHeadHelper
                 array_push($reports, array(
                     "sale"=>$shopReport->totalSales,
                     "shopName"=>$shop->shop_name,
-                    "date"=>$customer->comments,
+                    "date"=>$customer->date_modified,
                     "guide"=>$customer->addr3,
                     "avg"=>$shopReport->totalSales/($group->pax ===0 ?1:$group->pax),
                     // todo:: finish special logic
@@ -271,6 +271,66 @@ class GiftShopHeadHelper
         $group->avg = $totalSales/($group->pax ===0 ?1:$group->pax);
 
         return ['groupSummary'=>$group,'reports'=>$reports];
+    }
+
+
+    public function getAgentSalesSummary($shops, $startDate, $endDate, $user)
+    {
+        $reports = [];
+        
+        # selected reports group by tour group name and tour agent
+        // should change the connection for each db than calculate summary for each shop
+        foreach ($shops as $shop) {
+            $agentReport = self::getAgentReport($startDate, $endDate, $shop);
+            if($agentReport!=null){
+                $agentReport = json_decode(json_encode($agentReport));
+                foreach ($agentReport->reports as  $agentReportItem) {
+                    if(!array_key_exists($agentReportItem->agentName,$reports)){
+                        # create new agent to reports
+                        $reports[$agentReportItem->agentName] = ["summary"=>["pax"=>0,"shopTotal"=>[],"subTotal"=>0,"perhead"=>0],"reports"=>[]];
+                        $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName] = ["pax"=>$agentReportItem->pax,"kb"=>$agentReportItem->kb==1?"HF":"%","shopReports"=>[]];
+
+                        # mapping values
+                        $sale = $agentReportItem->totalSales ? $agentReportItem->totalSales : 0;
+                        $reports[$agentReportItem->agentName]["summary"]["pax"] += $agentReportItem->pax;
+                        $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName]["shopReports"][$agentReport->shopName] = $sale + 0;
+                        $reports[$agentReportItem->agentName]['summary']['subTotal'] = $sale + 0;
+                    }   
+                    else{
+                        # add new reports to existing agent
+                        $sale = $agentReportItem->totalSales ? $agentReportItem->totalSales : 0;
+                        $reports[$agentReportItem->agentName]['summary']['subTotal'] += $sale;
+                        
+                        if(array_key_exists($agentReportItem->groupName,$reports[$agentReportItem->agentName]['reports'])) {
+                
+                            # mapping values
+                            $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName]["shopReports"][$agentReport->shopName] = $sale + 0;
+  
+                        }else{
+                            # create new group/shop report to agent
+                            $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName] = ["pax"=>$agentReportItem->pax,"kb"=>$agentReportItem->kb==1?"HF":"%","shopReports"=>[]];
+                            # mapping values
+                            $reports[$agentReportItem->agentName]["summary"]["pax"] += $agentReportItem->pax;                            
+                            $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName]["shopReports"][$agentReport->shopName] = $sale + 0;
+                        }
+                    }
+                    if(array_key_exists($agentReport->shopName,$reports[$agentReportItem->agentName]['summary']['shopTotal'])){
+                                
+                        $reports[$agentReportItem->agentName]['summary']['shopTotal'][$agentReport->shopName] += $sale;
+                    }else{
+                        $reports[$agentReportItem->agentName]['summary']['shopTotal'][$agentReport->shopName] = $sale + 0;
+                    }                 
+                }
+            }
+            // array_push($reports,$agentReport);
+        }
+
+        foreach ($reports as $key=>$ele) {
+            $reports[$key]['summary']['perhead'] = $ele['summary']['subTotal'] / ($ele['summary']['pax']==0?1:$ele['summary']['pax']);
+        }
+
+        return $reports;
+
     }
 
     public function getWeekDates($year, $week)
@@ -708,5 +768,42 @@ class GiftShopHeadHelper
         //     //throw $th;
         //     return [];
         // }
+    }
+
+    /**
+     * 生成旅行社的报表
+     */
+    public function getAgentReport($startDate, $endDate, $shop)
+    {
+                # found database connect credentials
+                $db_path_array = explode(';', $shop->db_path);
+                $db_password = explode(';', $shop->db_password);
+                $database_ip = explode('=', $db_path_array[0])[1];
+                $database_name = explode('=', $db_path_array[1])[1];
+                $username = explode('=', $db_password[0])[1];
+                $password = explode('=', $db_password[1])[1];
+        
+                # generate group report for this shop
+                // try {
+                    # connect to DB
+                    DB::purge('sqlsrv');
+        
+                    // set connection database ip in run time
+                    \Config::set('database.connections.sqlsrv.host', $database_ip);
+                    \Config::set('database.connections.sqlsrv.username', $username);
+                    \Config::set('database.connections.sqlsrv.password', $password);
+                    \Config::set('database.connections.sqlsrv.database', $database_name);
+                    \Config::set('database.connections.sqlsrv.port', 1433); 
+
+                    $sqlResult = DB::connection('sqlsrv')->table('Docket')
+                    ->join('Customer','Docket.customer_id','=','Customer.customer_id')
+                    ->whereBetween('Customer.date_modified',[$startDate,$endDate])
+                    // ->whereIn('Customer.given_names',$groupNames)
+                    ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
+                    ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
+                    ->get();
+                     
+                    # generate readable shop summary report
+                    return ["shopName"=>$shop->barcode,"reports"=>$sqlResult];
     }
 }

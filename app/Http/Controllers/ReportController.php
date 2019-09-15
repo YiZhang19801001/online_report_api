@@ -155,7 +155,6 @@ class ReportController extends Controller
 
             $shop = Shop::find($shopId);
 
-
             DB::purge();
 
             // set connection database ip in run time
@@ -173,10 +172,13 @@ class ReportController extends Controller
                     break;
                 case 'group':
                     $groupId = $request->groupId;
-                    $reports = $this->giftShopHeadHelper->getGroupSalesSummary($shops, $startDate, $endDate, $groupId,$user);
+                    $reports = $this->giftShopHeadHelper->getGroupSalesSummary($shops, $startDate, $endDate, $groupId, $user);
                     break;
                 case 'agent':
-                    $reports = $this->giftShopHeadHelper->getAgentSummary($shops, $startDate, $endDate, $user);
+                    // $groupNames = TourGroup::
+                    //     whereBetween('date_end', [$startDate, $endDate])
+                    //     ->select('group_name')->get();
+                    $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user);
                     break;
                 default:
                     $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);
