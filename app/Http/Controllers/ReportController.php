@@ -269,6 +269,7 @@ class ReportController extends Controller
                 case 'hour':
                     $reports = $this->helper->getReportByHour($startDate, $endDate, $user);
                     break;
+
                 case 'customer':
                     $reports = $this->helper->getReportByCustomer($startDate, $endDate, $user);
                     break;
@@ -308,6 +309,46 @@ class ReportController extends Controller
                     break;
                 default:
                     $reports = $this->headHelper->getReportByCategory($startDate, $endDate, $request->shopId, $user);
+                    break;
+            }
+        } else if ($user->user_type === 'GIFTSHOPHEAD') {
+            $shop = $user->shops()->first();
+
+            DB::purge();
+
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+            \Config::set('database.connections.sqlsrv.username', $shop->username);
+            \Config::set('database.connections.sqlsrv.password', $shop->password);
+            \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+            \Config::set('database.connections.sqlsrv.port', $shop->port);
+            $reports['shops'] = PosHeadShop::where('shop_id', '>', 0)->get();
+            $posHeadShop = PosHeadShop::find($request->shopId);
+
+            #call helper class to generate data
+            // use switch to filter the meta in controller make codes more readable in helper class
+            switch ($reportType) {
+                case 'product':
+                    $reports = $this->giftShopHeadHelper->getReportByProduct($startDate, $endDate, $posHeadShop, $user);
+                    break;
+                case 'category':
+                    $reports = $this->giftShopHeadHelper->getReportByCategory($startDate, $endDate, $posHeadShop, $user);
+                    break;
+                case 'day':
+                    $reports = $this->giftShopHeadHelper->getReportByDay($startDate, $endDate, $posHeadShop, $user);
+                    break;
+                case 'hour':
+                    $reports = $this->giftShopHeadHelper->getReportByHour($startDate, $endDate, $posHeadShop, $user);
+                    break;
+
+                case 'staff':
+                    $reports = $this->giftShopHeadHelper->getReportByHour($startDate, $endDate, $posHeadShop, $user);
+                    break;
+                case 'customer':
+                    $reports = $this->giftShopHeadHelper->getReportByCustomer($startDate, $endDate, $posHeadShop, $user);
+                    break;
+                default:
+                    $reports = $this->giftShopHeadHelper->getReportByCategory($startDate, $endDate, $posHeadShop, $user);
                     break;
             }
         }

@@ -394,33 +394,43 @@ class GiftShopHeadHelper
         return array('sales' => $sales, 'tx' => $tx);
     }
 
-    public function getReportByProduct($startDate, $endDate, $shopId, $user)
+    public function getReportByProduct($startDate, $endDate, $shop, $user)
     {
 
-        if ($user->use_history == 0) {
-            $docketLines = HistDocketLine::whereBetween('docket_date', [$startDate, $endDate])
-                ->where('hist_type', 1)
-                ->where('stock_id', '>', 0)
-                ->where('shop_id', $shopId)
-                ->selectRaw('stock_id,sum(quantity) as quantity,sum(sell_inc) as amount')
-                ->groupBy('stock_id')
-                ->take(25)
-                ->get();
-        } else {
+        # found database connect credentials
+        $db_path_array = explode(';', $shop->db_path);
+        $db_password = explode(';', $shop->db_password);
 
-            $docketLines = DB::connection('sqlsrv')->table('DocketLine')
-                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-                ->where('Stock.stock_id', '>', 0)
-                ->where('Docket.shop_id', $shopId)
-                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-                ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.stock_id,Stock.sell,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('Stock.stock_id', 'Stock.sell')
-                ->orderBy('amount', 'desc')
-                ->take(25)
-                ->get();
-        }
+        $database_ip = explode('=', $db_path_array[0])[1];
+        $database_name = explode('=', $db_path_array[1])[1];
+        $username = explode('=', $db_password[0])[1];
+        $password = explode('=', $db_password[1])[1];
+
+        # generate group report for this shop
+        // try {
+        # connect to DB
+        DB::purge('sqlsrv');
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $database_ip);
+        \Config::set('database.connections.sqlsrv.username', $username);
+        \Config::set('database.connections.sqlsrv.password', $password);
+        \Config::set('database.connections.sqlsrv.database', $database_name);
+        \Config::set('database.connections.sqlsrv.port', 1433);
+        
+
+        $docketLines = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('Stock.stock_id,Stock.sell,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+            ->groupBy('Stock.stock_id', 'Stock.sell')
+            ->orderBy('amount', 'desc')
+            ->take(25)
+            ->get();
+        
 
         foreach ($docketLines as $docketLine) {
             $stock = Stock::find($docketLine->stock_id);
@@ -443,31 +453,43 @@ class GiftShopHeadHelper
         return compact('ths', 'dataFormat', 'data');
     }
 
-    public function getReportByCategory($startDate, $endDate, $shopId, $user)
+    public function getReportByCategory($startDate, $endDate, $shop, $user)
     {
-        if ($user->use_history == 0) {
-            $categories = DB::connection('sqlsrv')->table('HistDocketLine')
-                ->join('Stock', 'Stock.stock_id', '=', 'HistDocketLine.stock_id')
-                ->where('Stock.stock_id', '>', 0)
-                ->where('shop_id', $shopId)
-                ->whereBetween('HistDocketLine.docket_date', [$startDate, $endDate])
-                ->selectRaw('Stock.cat1,sum(HistDocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('cat1')
-                ->get();
-        } else {
 
-            $categories = DB::connection('sqlsrv')->table('DocketLine')
-                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-                ->where('Stock.stock_id', '>', 0)
-                ->where('Docket.shop_id', $shopId)
-                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-                ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
-                ->groupBy('cat1')
-                ->orderBy('amount', 'desc')
-                ->get();
-        }
+        # found database connect credentials
+        $db_path_array = explode(';', $shop->db_path);
+        $db_password = explode(';', $shop->db_password);
+
+        $database_ip = explode('=', $db_path_array[0])[1];
+        $database_name = explode('=', $db_path_array[1])[1];
+        $username = explode('=', $db_password[0])[1];
+        $password = explode('=', $db_password[1])[1];
+
+        # generate group report for this shop
+        // try {
+        # connect to DB
+        DB::purge('sqlsrv');
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $database_ip);
+        \Config::set('database.connections.sqlsrv.username', $username);
+        \Config::set('database.connections.sqlsrv.password', $password);
+        \Config::set('database.connections.sqlsrv.database', $database_name);
+        \Config::set('database.connections.sqlsrv.port', 1433);
+
+       
+
+        $categories = DB::connection('sqlsrv')->table('DocketLine')
+            ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+            ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+            ->where('Stock.stock_id', '>', 0)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('Stock.cat1,sum(DocketLine.quantity) as quantity,sum(DocketLine.sell_inc * DocketLine.quantity) as amount')
+            ->groupBy('cat1')
+            ->orderBy('amount', 'desc')
+            ->get();
+        
         foreach ($categories as $category) {
 
             $category->name = $category->cat1;
@@ -488,9 +510,31 @@ class GiftShopHeadHelper
         return compact('ths', 'dataFormat', 'data');
     }
 
-    public function getReportByDay($startDate, $endDate, $shopId, $user_id)
+    public function getReportByDay($startDate, $endDate, $shop, $user_id)
     {
-        $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->select(DB::raw('CONVERT(VARCHAR(10), docket_date, 120) as date, gp,discount, total_inc'))->get();
+
+                # found database connect credentials
+                $db_path_array = explode(';', $shop->db_path);
+                $db_password = explode(';', $shop->db_password);
+        
+                $database_ip = explode('=', $db_path_array[0])[1];
+                $database_name = explode('=', $db_path_array[1])[1];
+                $username = explode('=', $db_password[0])[1];
+                $password = explode('=', $db_password[1])[1];
+        
+                # generate group report for this shop
+                // try {
+                # connect to DB
+                DB::purge('sqlsrv');
+        
+                // set connection database ip in run time
+                \Config::set('database.connections.sqlsrv.host', $database_ip);
+                \Config::set('database.connections.sqlsrv.username', $username);
+                \Config::set('database.connections.sqlsrv.password', $password);
+                \Config::set('database.connections.sqlsrv.database', $database_name);
+                \Config::set('database.connections.sqlsrv.port', 1433);
+
+        $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->select(DB::raw('CONVERT(VARCHAR(10), docket_date, 120) as date, gp,discount, total_inc'))->get();
 
         $ths = array(
             ['type' => 'text', 'value' => 'date'],
@@ -524,8 +568,29 @@ class GiftShopHeadHelper
 
     }
 
-    public function getReportByHour($startDate, $endDate, $shopId, $user)
+    public function getReportByHour($startDate, $endDate, $shop, $user)
     {
+                # found database connect credentials
+                $db_path_array = explode(';', $shop->db_path);
+                $db_password = explode(';', $shop->db_password);
+        
+                $database_ip = explode('=', $db_path_array[0])[1];
+                $database_name = explode('=', $db_path_array[1])[1];
+                $username = explode('=', $db_password[0])[1];
+                $password = explode('=', $db_password[1])[1];
+        
+                # generate group report for this shop
+                // try {
+                # connect to DB
+                DB::purge('sqlsrv');
+        
+                // set connection database ip in run time
+                \Config::set('database.connections.sqlsrv.host', $database_ip);
+                \Config::set('database.connections.sqlsrv.username', $username);
+                \Config::set('database.connections.sqlsrv.password', $password);
+                \Config::set('database.connections.sqlsrv.database', $database_name);
+                \Config::set('database.connections.sqlsrv.port', 1433);
+
         $data = array();
         $ths = array(
             ['type' => 'text', 'value' => 'hour'],
@@ -540,21 +605,8 @@ class GiftShopHeadHelper
             ['type' => 'number', 'value' => 'gp'],
         );
 
-        if ($user->use_history == 0) {
-            $dockets = HistDocket::where('shop_id', $shopId)->where('hist_type', 0)->whereBetween('docket_date', [$startDate, $endDate])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
 
-            $docketGroups = $dockets->groupBy('hour');
-
-            foreach ($docketGroups as $key => $value) {
-                $row['hour'] = $key . ':00';
-                $row['gp'] = collect($value)->sum('gp');
-                $row['discount'] = collect($value)->sum('discount');
-                $row['amount'] = collect($value)->sum('total_inc');
-                array_push($data, $row);
-            }
-        } else {
-
-            $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
+            $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->select(DB::raw('DATEPART(HOUR,docket_date) as hour, gp,discount, total_inc'))->orderBy('hour')->get();
             $docketGroups = $dockets->groupBy('hour');
 
             foreach ($docketGroups as $key => $value) {
@@ -565,44 +617,38 @@ class GiftShopHeadHelper
 
                 array_push($data, $row);
             }
-        }
+        
 
         return compact('ths', 'dataFormat', 'data');
 
     }
 
-    public function getReportByCustomer($startDate, $endDate, $shopId, $user)
+    public function getReportByCustomer($startDate, $endDate, $shop, $user)
     {
+            # found database connect credentials
+            $db_path_array = explode(';', $shop->db_path);
+            $db_password = explode(';', $shop->db_password);
+    
+            $database_ip = explode('=', $db_path_array[0])[1];
+            $database_name = explode('=', $db_path_array[1])[1];
+            $username = explode('=', $db_password[0])[1];
+            $password = explode('=', $db_password[1])[1];
+    
+            # generate group report for this shop
+            // try {
+            # connect to DB
+            DB::purge('sqlsrv');
+    
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $database_ip);
+            \Config::set('database.connections.sqlsrv.username', $username);
+            \Config::set('database.connections.sqlsrv.password', $password);
+            \Config::set('database.connections.sqlsrv.database', $database_name);
+            \Config::set('database.connections.sqlsrv.port', 1433);
 
-        $ths = array(
-            ['type' => 'text', 'value' => 'id'],
-            ['type' => 'text', 'value' => 'name'],
-            ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'gp%'],
 
-        );
-        $dataFormat = array(
-            ['type' => 'text', 'value' => 'customer_id'],
-            ['type' => 'text', 'value' => 'full_name'],
-            ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
-            ['type' => 'number', 'value' => 'gp_percentage'],
-
-        );
-
-        if ($user->use_type) {
-            $data = HistDocket::where('hist_type', 1)
-                ->whereBetween('docket_date', [$startDate, $endDate])
-                ->where('shop_id', $shopId)
-                ->selectRaw('customer_id,surname,max(surname) ,sum(gp) as gp, sum(discount) as discount, sum(total_inc) as amount')
-                ->groupBy('customer_id')
-                ->get();
-        } else {
             # read all dockets during the period
-            $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId);
+            $sql = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"]);
             $totalSales = $sql->sum('total_inc');
             $totalRefund = 0;
             foreach ($sql->get() as $item) {
@@ -613,23 +659,30 @@ class GiftShopHeadHelper
 
             $data = DB::connection('sqlsrv')->table('DocketLine')
                 ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
                 ->join('Customer', 'Customer.customer_id', '=', 'Docket.customer_id')
-                ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Customer.customer_id,(Customer.surname + Customer.given_names) as full_name,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount, sum(DocketLine.sell_inc * DocketLine.quantity) as amount,sum(DocketLine.sell_ex * DocketLine.quantity) as amount_ex')
-                ->groupBy('Customer.customer_id', 'Customer.surname', 'Customer.given_names')
-                ->orderBy('amount', 'desc')
+                ->selectRaw('Customer.barcode,Customer.given_names as groupName,count(DISTINCT Docket.Docket_id) as count,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp , sum(DocketLine.sell_inc * DocketLine.quantity) as sales')
+                ->groupBy('Customer.barcode', 'Customer.surname', 'Customer.given_names')
+                ->orderBy('sales', 'desc')
                 ->get();
-
-        }
+        
+       
+        $totalCount = 0;
+        $totalSales = 0;
+        $totalGp = 0;
+        
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount_ex == 0 ? 1 : $value->amount_ex);
+            $value->gp_percentage = $value->gp / ($value->sales == 0 ? 1 : $value->sales);
+            $totalCount += $value->count;
+            $totalSales += $value->sales;
+            $totalGp += $value->gp;
         }
 
-        return compact('ths', 'dataFormat', 'data');
+        $total = ['sales'=>$totalSales, 'count'=>$totalCount, 'gp'=>$totalGp,'gp_percentage'=>$totalGp/($totalSales==0?1:$totalSales)];
+
+        return ["summary"=>$total,"details"=>$data];
 
     }
 
