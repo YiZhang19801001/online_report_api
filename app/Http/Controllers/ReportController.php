@@ -119,19 +119,20 @@ class ReportController extends Controller
             \Config::set('database.connections.sqlsrv.port', $shop->port);
             $reports['shops'] = PosHeadShop::where('shop_id', '>', 0)->get();
 
+            $posHeadShop = PosHeadShop::find($request->shopId);
             #call helper class to generate data
             // use switch to filter the meta in controller make codes more readable in helper class
             switch ($meta) {
                 case 'dailySummary':
-                    $posHeadShop = PosHeadShop::find($request->shopId);
+
                     $reports = $this->giftShopHeadHelper->getDailySummary($date, $posHeadShop, $user);
                     break;
                 case 'weeklySummary':
-                    $reports = $this->giftShopHeadHelper->getWeeklySummary($date, $request->shopId, $user);
+                    $reports = $this->giftShopHeadHelper->getWeeklySummary($date, $posHeadShop, $user);
                     break;
 
                 case 'dataGroup':
-                    $reports = $this->giftShopHeadHelper->getDataGroup($date, $request->shopId, $user);
+                    $reports = $this->giftShopHeadHelper->getDataGroup($date, $posHeadShop, $user);
                     break;
                 default:
                     $reports = array();

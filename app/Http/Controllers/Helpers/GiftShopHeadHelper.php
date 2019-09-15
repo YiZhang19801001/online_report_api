@@ -71,7 +71,7 @@ class GiftShopHeadHelper
 
     }
 
-    public function getWeeklySummary($dateTime, $shopId, $user)
+    public function getWeeklySummary($dateTime, $shop, $user)
     {
         # read inputs preparing data.
         $dtString = date('Y-m-d', strtotime($dateTime . '-1 month'));
@@ -83,36 +83,38 @@ class GiftShopHeadHelper
         $weeks = self::makeWeeks($dateTime);
         $weeklyReports = array();
 
-        # CONDITION: use_history === true --> generate reports from history table
-        if ($user->use_history == 0) {
-            # try to find weely report
-            $histDocket = HistDocket::where('shop_id', $shopId)->whereBetween('docket_date', [$startDate, $endDate])->where('hist_type', 3)->first();
-            if ($histDocket != null) {
-                $comparison = ['date' => $startDate, 'sales' => $histDocket->total_inc, 'tx' => $histDocket->docket_count];
-                foreach ($weeks as $week) {
-                    $report = self::getWeeklyReport($week, $shopId, $user->use_history);
-                    $report['from'] = $week['from'];
-                    $report['to'] = $week['to'];
-                    $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $shopId, $user);
-                    array_push($weeklyReports, $report);
-                }
-            } else {
-                $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
-                $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
-            }
-        } else {
-            $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId)->sum('total_inc');
-            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->where('shop_id', $shopId)->count();
-            $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
-            foreach ($weeks as $week) {
-                $report = self::getWeeklyReport($week, $shopId, $user->use_history);
-                $report['from'] = $week['from'];
-                $report['to'] = $week['to'];
-                $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $shopId, $user);
-                array_push($weeklyReports, $report);
-            }
+        # found database connect credentials
+        $db_path_array = explode(';', $shop->db_path);
+        $db_password = explode(';', $shop->db_password);
+
+        $database_ip = explode('=', $db_path_array[0])[1];
+        $database_name = explode('=', $db_path_array[1])[1];
+        $username = explode('=', $db_password[0])[1];
+        $password = explode('=', $db_password[1])[1];
+
+        # generate group report for this shop
+        // try {
+        # connect to DB
+        DB::purge('sqlsrv');
+
+        // set connection database ip in run time
+        \Config::set('database.connections.sqlsrv.host', $database_ip);
+        \Config::set('database.connections.sqlsrv.username', $username);
+        \Config::set('database.connections.sqlsrv.password', $password);
+        \Config::set('database.connections.sqlsrv.database', $database_name);
+        \Config::set('database.connections.sqlsrv.port', 1433);
+
+        $sales = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+        $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
+        $comparison = ['date' => $startDate, 'sales' => $sales, 'tx' => $tx];
+        foreach ($weeks as $week) {
+            $report = self::getWeeklyReport($week, $user->use_history);
+            $report['from'] = $week['from'];
+            $report['to'] = $week['to'];
+            $report['paymentMethodReports'] = self::reportsForPaymentMethod($week['from'], $week['to'], $user);
+            array_push($weeklyReports, $report);
         }
+        
 
         return compact('weeklyReports', 'weeks', 'comparison', 'startDate', 'endDate');
     }
@@ -367,25 +369,25 @@ class GiftShopHeadHelper
         return new \DateTime($string, new \DateTimeZone('Australia/Sydney'));
     }
 
-    public function getWeeklyReport($week, $shopId, $use_history)
+    public function getWeeklyReport($week, $use_history)
     {
         $startDate = $week['from'];
         $endDate = $week['to'];
 
         if ($use_history == 0) {
-            $histDocket = HistDocket::where('hist_type', 2)->where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->first();
+            $histDocket = HistDocket::where('hist_type', 2)->where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->first();
             if ($histDocket != null) {
                 $sales = $histDocket->total_inc;
                 $tx = $histDocket->docket_count;
             } else {
-                $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+                $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+                $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
 
             }
 
         } else {
-            $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
-            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->where('shop_id', $shopId)->whereIn('transaction', ["SA", "IV"])->count();
+            $sales = Docket::where('docket_date', '>', $startDate)->where('docket_date', '<=', $endDate)->whereIn('transaction', ["SA", "IV"])->sum('total_inc');
+            $tx = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->count();
 
         }
 
