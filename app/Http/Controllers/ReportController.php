@@ -188,9 +188,7 @@ class ReportController extends Controller
 
         } else if ($user->user_type === "GIFTSHOPHEAD") {
             // find shop according to inputs shop_ip
-            $shopId = $user->shops()->first()->shop_id;
-
-            $shop = Shop::find($shopId);
+            $shop = $user->shops()->first();
 
             DB::purge();
 
