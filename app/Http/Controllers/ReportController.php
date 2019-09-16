@@ -7,6 +7,7 @@ use App\Http\Controllers\Helpers\HeadReportHelper;
 use App\Http\Controllers\Helpers\PosReportHelper;
 use App\PosHeadShop;
 use App\Shop;
+use App\TourGroup;
 use Illuminate\Http\Request;
 use \Illuminate\Support\Facades\DB;
 
@@ -210,11 +211,11 @@ class ReportController extends Controller
                     $reports = $this->giftShopHeadHelper->getGroupSalesSummary($shops, $startDate, $endDate, $groupId, $user);
                     break;
                 case 'agent':
-                    // $groupNames = TourGroup::
-                    //     whereBetween('date_end', [$startDate, $endDate])
-                    //     ->select('group_name')->get();
+                    $groupNames = TourGroup::
+                        whereBetween('date_start', [$startDate, $endDate])
+                        ->select('group_name')->get();
                     $agentName = $request->input("agentName", "");
-                    $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user, $agentName);
+                    $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user, $agentName, $groupNames);
                     break;
                 default:
                     $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);
