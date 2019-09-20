@@ -78,6 +78,7 @@ class AuthController extends Controller
 
         if ($user->user_type === 'CUSTOMER') {
             $shops = $user->shops()->get();
+
         } else if ($user->user_type === 'HEAD') {
             // find shop according to inputs shop_ip
             $shopId = $user->shops()->first()->shop_id;

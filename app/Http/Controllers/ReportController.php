@@ -164,10 +164,10 @@ class ReportController extends Controller
             $shops = $user->shops()->get();
 
             #call helper class to generate data
-            $reports = $this->helper->getTotalSummary($shops, $startDate, $endDate, $user);
+            $result = $this->helper->getTotalSummary($shops, $startDate, $endDate, $user);
             // use switch to filter the meta in controller make codes more readable in helper class
-
-            $shops = $user->shops()->select('shop_name')->get();
+            $reports = $result['reporst'];
+            $shops = $result['shops'];
         } else if ($user->user_type === 'HEAD') {
             // find shop according to inputs shop_ip
             $shopId = $user->shops()->first()->shop_id;
@@ -240,8 +240,7 @@ class ReportController extends Controller
             }
         }
         $path = 'totalSummary';
-        // $reports['shops'] = $shops;
-        return response()->json(compact('reports', 'path'), 200);
+        return response()->json(compact('reports', 'path', 'shops'), 200);
     }
 
     public function update(Request $request, $id)

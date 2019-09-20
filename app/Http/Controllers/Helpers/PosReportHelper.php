@@ -204,14 +204,16 @@ class PosReportHelper
     public function getTotalSummary($shops, $startDate, $endDate, $user)
     {
         $reports = [];
+        $newShops = [];
         foreach ($shops as $shop) {
             $report = $this->makeReport($shop, $startDate, $endDate, $user);
-            if($report!=""){
+            if ($report != "") {
                 array_push($reports, $report);
+                array_push($newShops, $shop);
             }
         }
 
-        return collect($reports)->values();
+        return ['reports' => collect($reports)->values(), 'shops' => $newShops];
     }
 
     public function makeReport($shop, $startDate, $endDate, $user)
@@ -219,54 +221,54 @@ class PosReportHelper
         try {
             DB::purge('sqlsrv');
 
-        // set connection database ip in run time
-        \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
-        \Config::set('database.connections.sqlsrv.username', $shop->username);
-        \Config::set('database.connections.sqlsrv.password', $shop->password);
-        \Config::set('database.connections.sqlsrv.database', $shop->database_name);
-        \Config::set('database.connections.sqlsrv.port', $shop->port);
+            // set connection database ip in run time
+            \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+            \Config::set('database.connections.sqlsrv.username', $shop->username);
+            \Config::set('database.connections.sqlsrv.password', $shop->password);
+            \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+            \Config::set('database.connections.sqlsrv.port', $shop->port);
 
-        if ($user->use_history == 0) {
-            $sqlResult = HistDocket::whereBetween('docketDate', [$startDate, $endDate])
-                ->where('hist_type', 1)
-                ->selectRaw('sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund,,sum(total_ex) as totalSales_ex')
-                ->first();
+            if ($user->use_history == 0) {
+                $sqlResult = HistDocket::whereBetween('docketDate', [$startDate, $endDate])
+                    ->where('hist_type', 1)
+                    ->selectRaw('sum(gp) as gp ,sum(discount) as discount,sum(docket_count) as totalTx,sum(total_inc) as totalSales,sum(refund) as totalRefund,,sum(total_ex) as totalSales_ex')
+                    ->first();
 
-            return [
-                'totalSales' => $sqlResult->totalSales,
-                'totalTx' => $sqlResult->totalTx,
-                'shop' => $shop,
-                'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
-                'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
-                'gp_percentage' => $sqlResult->totalSales_ex == 0 ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales_ex,
-                'totalRefund' => $sqlResult->totalRefund,
-            ];
-        } else {
-            # read all dockets during the period
-            $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
-                ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            // ->where('Stock.stock_id', '>', 0)
-                ->whereBetween('Docket.docket_date', [$startDate, $endDate])
-                ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->whereIn('transaction', ["SA", "IV"])
-                ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
-                ->first();
+                return [
+                    'totalSales' => $sqlResult->totalSales,
+                    'totalTx' => $sqlResult->totalTx,
+                    'shop' => $shop,
+                    'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
+                    'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
+                    'gp_percentage' => $sqlResult->totalSales_ex == 0 ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales_ex,
+                    'totalRefund' => $sqlResult->totalRefund,
+                ];
+            } else {
+                # read all dockets during the period
+                $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
+                    ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                // ->where('Stock.stock_id', '>', 0)
+                    ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                    ->whereIn('Docket.transaction', ["SA", "IV"])
+                    ->whereIn('transaction', ["SA", "IV"])
+                    ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
+                    ->first();
 
-            # calculate totalRefund
-            $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
-            # calculate gp_percentage
-            $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
-            return [
-                'totalSales' => $sqlResult->totalSales,
-                'totalTx' => $sqlResult->totalTx,
-                'shop' => $shop,
-                'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
-                'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
-                'gp_percentage' => $sqlResult->gp_percentage,
-                'totalRefund' => $sqlResult->totalRefund,
-            ];
-        }
+                # calculate totalRefund
+                $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
+                # calculate gp_percentage
+                $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
+                return [
+                    'totalSales' => $sqlResult->totalSales,
+                    'totalTx' => $sqlResult->totalTx,
+                    'shop' => $shop,
+                    'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
+                    'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
+                    'gp_percentage' => $sqlResult->gp_percentage,
+                    'totalRefund' => $sqlResult->totalRefund,
+                ];
+            }
         } catch (\Throwable $th) {
             return "";
         }
