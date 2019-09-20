@@ -166,7 +166,7 @@ class ReportController extends Controller
             #call helper class to generate data
             $result = $this->helper->getTotalSummary($shops, $startDate, $endDate, $user);
             // use switch to filter the meta in controller make codes more readable in helper class
-            $reports = $result['reporst'];
+            $reports = $result['reports'];
             $shops = $result['shops'];
         } else if ($user->user_type === 'HEAD') {
             // find shop according to inputs shop_ip
