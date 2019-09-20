@@ -271,13 +271,14 @@ class GiftShopHeadHelper
         # selected reports group by tour group name and tour agent
         // should change the connection for each db than calculate summary for each shop
         foreach ($shops as $shop) {
-            $agentReport = self::getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames);
+            $agentReport = self::getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames,$user);
             if($agentReport!=null){
                 $agentReport = json_decode(json_encode($agentReport));
                 foreach ($agentReport->reports as  $agentReportItem) {
                     if(!array_key_exists($agentReportItem->agentName,$reports)){
-                        # create new agent to reports
+                        # create new agent to reports                       
                         $reports[$agentReportItem->agentName] = ["summary"=>["pax"=>0,"shopTotal"=>$initShopTotal,"subTotal"=>0,"perhead"=>0],"reports"=>[]];
+                        
                         $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName] = ["pax"=>$agentReportItem->pax,"kb"=>$agentReportItem->kb==1?"HF":"%","shopReports"=>$initShopTotal];
 
                         # mapping values
@@ -888,7 +889,7 @@ class GiftShopHeadHelper
                                         ->join('Customer','Docket.customer_id','=','Customer.customer_id')
                                         ->whereBetween('Customer.date_modified',[$startDate,$endDate])
                                         ->whereIn('Customer.given_names',$groupNames)
-                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
+                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
                                         ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
                                         ->get();
                     }else{
@@ -897,10 +898,14 @@ class GiftShopHeadHelper
                                         ->whereBetween('Customer.date_modified',[$startDate,$endDate])
                                         ->where('Customer.surname',$agentName)
                                         ->whereIn('Customer.given_names',$groupNames)
-                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName, Customer.suburb as pax,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
+                                        ->selectRaw('Customer.given_names as groupName,Customer.surname as agentName,Customer.grade as kb,Customer.addr3 as guide,sum(Docket.total_inc) as totalSales')
                                         ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
                                         ->get();
                     }
+                    foreach ($sqlResult as $ele) {
+                        $ele->pax = 0;
+                    }
+                    #, Customer.suburb as pax
 
                 }catch (\Throwable $th){
                     $sqlResult = [];

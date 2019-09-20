@@ -211,11 +211,20 @@ class ReportController extends Controller
                     $reports = $this->giftShopHeadHelper->getGroupSalesSummary($shops, $startDate, $endDate, $groupId, $user);
                     break;
                 case 'agent':
-                    $groupNames = TourGroup::
-                        whereBetween('date_start', [$startDate, $endDate])
-                        ->select('group_name')->get();
+                    if ($user->name === 'lisa') {
+                        $groupNames = TourGroup::
+                            whereBetween('start_date', [$startDate, $endDate])
+                            ->select('group_code')->get();
+
+                    } else {
+                        $groupNames = TourGroup::
+                            whereBetween('date_start', [$startDate, $endDate])
+                            ->select('group_name')->get();
+
+                    }
                     $agentName = $request->input("agentName", "");
                     $reports = $this->giftShopHeadHelper->getAgentSalesSummary($shops, $startDate, $endDate, $user, $agentName, $groupNames);
+
                     break;
                 default:
                     $reports = $this->giftShopHeadHelper->getShopTotalSummary($shops, $startDate, $endDate, $user);
