@@ -906,6 +906,8 @@ class GiftShopHeadHelper
                         foreach ($groupNameToPax as $nameToPax) {
                             if($nameToPax->group_name === $ele->groupName){
                                 $ele->pax = $nameToPax->pax;
+                            }else{
+                                $ele->pax = 0;
                             }
                         }
                     }
