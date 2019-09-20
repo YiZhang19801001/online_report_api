@@ -904,8 +904,9 @@ class GiftShopHeadHelper
                     }
                     foreach ($sqlResult as $ele) {
                         foreach ($groupNameToPax as $nameToPax) {
-                            if($nameToPax->group_name === $ele->groupName){
+                            if($nameToPax->group_name == $ele->groupName){
                                 $ele->pax = $nameToPax->pax;
+                                break;
                             }else{
                                 $ele->pax = 0;
                             }
