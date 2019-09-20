@@ -261,7 +261,7 @@ class GiftShopHeadHelper
     }
 
 
-    public function getAgentSalesSummary($shops, $startDate, $endDate, $user,$agentName,$groupNames)
+    public function getAgentSalesSummary($shops, $startDate, $endDate, $user,$agentName,$groupNames,$groupNameToPax)
     {
         $reports = [];
         $initShopTotal = [];
@@ -271,7 +271,7 @@ class GiftShopHeadHelper
         # selected reports group by tour group name and tour agent
         // should change the connection for each db than calculate summary for each shop
         foreach ($shops as $shop) {
-            $agentReport = self::getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames,$user);
+            $agentReport = self::getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames,$groupNameToPax);
             if($agentReport!=null){
                 $agentReport = json_decode(json_encode($agentReport));
                 foreach ($agentReport->reports as  $agentReportItem) {
@@ -863,7 +863,7 @@ class GiftShopHeadHelper
     /**
      * 生成旅行社的报表
      */
-    public function getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames)
+    public function getAgentReport($startDate, $endDate, $shop,$agentName,$groupNames,$groupNameToPax)
     {
                 # found database connect credentials
                 $db_path_array = explode(';', $shop->db_path);
@@ -903,7 +903,11 @@ class GiftShopHeadHelper
                                         ->get();
                     }
                     foreach ($sqlResult as $ele) {
-                        $ele->pax = 0;
+                        foreach ($groupNameToPax as $nameToPax) {
+                            if($nameToPax->group_name === $ele->groupName){
+                                $ele->pax = $nameToPax->pax;
+                            }
+                        }
                     }
                     #, Customer.suburb as pax
 
