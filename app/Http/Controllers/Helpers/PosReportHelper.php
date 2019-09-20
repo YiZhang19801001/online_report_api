@@ -206,7 +206,9 @@ class PosReportHelper
         $reports = [];
         foreach ($shops as $shop) {
             $report = $this->makeReport($shop, $startDate, $endDate, $user);
-            array_push($reports, $report);
+            if($report!=""){
+                array_push($reports, $report);
+            }
         }
 
         return collect($reports)->values();
@@ -214,7 +216,8 @@ class PosReportHelper
 
     public function makeReport($shop, $startDate, $endDate, $user)
     {
-        DB::purge('sqlsrv');
+        try {
+            DB::purge('sqlsrv');
 
         // set connection database ip in run time
         \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
@@ -263,6 +266,9 @@ class PosReportHelper
                 'gp_percentage' => $sqlResult->gp_percentage,
                 'totalRefund' => $sqlResult->totalRefund,
             ];
+        }
+        } catch (\Throwable $th) {
+            return "";
         }
 
     }
