@@ -873,7 +873,7 @@ class GiftShopHeadHelper
                 $password = explode('=', $db_password[1])[1];
         
                 # generate group report for this shop
-                // try {
+                try {
                     # connect to DB
                     DB::purge('sqlsrv');
                     // set connection database ip in run time
@@ -901,6 +901,10 @@ class GiftShopHeadHelper
                                         ->groupBy('Customer.given_names','Customer.surname','Customer.suburb','Customer.grade','Customer.addr3')
                                         ->get();
                     }
+
+                }catch (\Throwable $th){
+                    $sqlResult = [];
+                }
                      
                     # generate readable shop summary report
                     return ["shopName"=>$shop->barcode,"reports"=>$sqlResult];

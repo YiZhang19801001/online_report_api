@@ -21,7 +21,7 @@ class TourGroupController extends Controller
         $startDate = new \DateTime($request->startDate, new \DateTimeZone('Australia/Sydney'));
         $endDate = new \DateTime($request->endDate, new \DateTimeZone('Australia/Sydney'));
 
-        if ($user->user_type === "GIFTSHOPHEAD") {
+        if ($user->user_type === "GIFTSHOPHEAD" && $user->name === 'giftshop') {
             $shopId = $user->shops()->first()->shop_id;
 
             $shop = Shop::find($shopId);
@@ -49,6 +49,33 @@ class TourGroupController extends Controller
                 $message = "can not connect to database";
             }
 
+        } else if ($user->user_type === "GIFTSHOPHEAD" && $user->name === 'lisa') {
+            $shopId = $user->shops()->first()->shop_id;
+
+            $shop = Shop::find($shopId);
+
+            try {
+                DB::purge();
+
+                // set connection database ip in run time
+                \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
+                \Config::set('database.connections.sqlsrv.username', $shop->username);
+                \Config::set('database.connections.sqlsrv.password', $shop->password);
+                \Config::set('database.connections.sqlsrv.database', $shop->database_name);
+                \Config::set('database.connections.sqlsrv.port', $shop->port);
+
+                $groupIds = TourGroup::
+                    where('start_date', '>', $startDate)
+                    ->where('end_date', '<', $endDate)
+                    ->select('group_id', 'group_code as group_name')
+                    ->get();
+                $code = "0";
+                $message = "success";
+            } catch (\Throwable $th) {
+                $code = "1";
+                $groupIds = [];
+                $message = "can not connect to database";
+            }
         }
 
         return response()->json(compact("code", "groupIds", "message"));
