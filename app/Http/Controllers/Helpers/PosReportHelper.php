@@ -210,6 +210,16 @@ class PosReportHelper
             if ($report != "") {
                 array_push($reports, $report);
                 array_push($newShops, $shop);
+            }else{
+                array_push($reports,[
+                    'totalSales' => null,
+                    'totalTx' => null,
+                    'shop' => $shop,
+                    'gp' => null,
+                    'discount' => null,
+                    'gp_percentage' => null,
+                    'totalRefund' => null,
+                ]);
             }
         }
 
