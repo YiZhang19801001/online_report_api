@@ -281,9 +281,9 @@ class GiftShopHeadHelper
                 foreach ($agentReport->reports as  $agentReportItem) {
                     if(!array_key_exists($agentReportItem->agentName,$reports)){
                         # create new agent to reports                       
-                        $reports[$agentReportItem->agentName] = ["summary"=>["pax"=>0,"shopTotal"=>$initShopTotal,"subTotal"=>0,"perhead"=>0,"guide"=>$agentReportItem->guide],"reports"=>[]];
+                        $reports[$agentReportItem->agentName] = ["summary"=>["pax"=>0,"shopTotal"=>$initShopTotal,"subTotal"=>0,"perhead"=>0],"reports"=>[]];
                         
-                        $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName] = ["pax"=>$agentReportItem->pax,"kb"=>$agentReportItem->kb==1?"HF":"%","shopReports"=>$initShopTotal];
+                        $reports[$agentReportItem->agentName]['reports'][$agentReportItem->groupName] = ["pax"=>$agentReportItem->pax,"kb"=>$agentReportItem->kb==1?"HF":"%","shopReports"=>$initShopTotal,"guide"=>$agentReportItem->guide];
 
                         # mapping values
                         $sale = $agentReportItem->totalSales ? $agentReportItem->totalSales : 0;
