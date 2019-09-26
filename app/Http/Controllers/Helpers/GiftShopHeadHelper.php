@@ -220,6 +220,10 @@ class GiftShopHeadHelper
         
         $group_name = $group->group_name;
         
+        if($user->name=='lisa'){
+            $group_name=$group->group_code;
+        }
+        
         $totalSales = 0;
 
         $reports = [];

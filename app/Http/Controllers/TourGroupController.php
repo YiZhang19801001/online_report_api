@@ -37,8 +37,8 @@ class TourGroupController extends Controller
                 \Config::set('database.connections.sqlsrv.port', $shop->port);
 
                 $groupIds = TourGroup::
-                    where('date_start', '>', $startDate)
-                    ->where('date_end', '<', $endDate)
+                    whereIn('date_start', [$startDate, $endDate])
+
                     ->select('group_id', 'group_name')
                     ->get();
                 $code = "0";
@@ -65,8 +65,8 @@ class TourGroupController extends Controller
                 \Config::set('database.connections.sqlsrv.port', $shop->port);
 
                 $groupIds = TourGroup::
-                    where('start_date', '>', $startDate)
-                    ->where('end_date', '<', $endDate)
+                    whereIn('start_date', [$startDate, $endDate])
+
                     ->select('group_id', 'group_code as group_name')
                     ->get();
                 $code = "0";
