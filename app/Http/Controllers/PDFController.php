@@ -72,6 +72,8 @@ class PDFController extends Controller
         $data['title'] = 'Profit Report (By Group)';
         $data['shopName'] = $request->input('shop_name', " ");
         $data['groupCode'] = $request->input('group_code', " ");
+        $data['totalQty'] = $totalQty;
+        $data['totalSale'] = $totalSale;
 
         $data['reports'] = $sqlResult;
 
