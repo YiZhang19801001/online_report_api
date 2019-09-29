@@ -31,8 +31,8 @@
       <td colspan="2">total sales</td>
       <td></td>
 
-      <td>{{number_format($report->totalQty,0)}}</td>
-      <td>{{number_format($report->totalSale,2)}}</td>
+      <td>{{number_format($totalQty,0)}}</td>
+      <td>{{number_format($totalSale,2)}}</td>
  </tr>
  </tbody>
 
