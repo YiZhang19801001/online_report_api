@@ -70,7 +70,7 @@ class PDFController extends Controller
         $pdf = PDF::loadView('profit_report', $data);
         $pdf->save($fileName);
 
-        $fileUrl = $_SERVER['DOCUMENT_ROOT'] . "/online_report_api/public/" . $fileName;
+        $fileUrl = "http://101.187.98.39:8181" . "/online_report_api/public/" . $fileName;
         $code = "0";
         return response()->json(compact('code', 'fileUrl'));
     }
