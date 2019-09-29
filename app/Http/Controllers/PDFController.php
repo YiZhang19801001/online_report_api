@@ -55,9 +55,19 @@ class PDFController extends Controller
             ->join('Stock', 'DocketLine.stock_id', '=', 'Stock.stock_id')
         // ->where('Docket.customer_id',$customer_id)
             ->where('Customer.given_names', $request->group_code)
-            ->selectRaw('Stock.Barcode, Customer.customer_id, Stock.[description] as [description],DocketLine.[cost_inc],DocketLine.sell_inc,DocketLine.[quantity] AS [qty], DocketLine.gp AS [line_gp], DocketLine.sell_inc * DocketLine.quantity as [extension], DocketLine.gp/DocketLine.sell_inc as [gp]')
+            ->selectRaw('Stock.Barcode, Customer.customer_id, Stock.[description] as [description],DocketLine.[cost_inc],DocketLine.sell_inc,DocketLine.[quantity] AS [qty], DocketLine.gp AS [line_gp], DocketLine.sell_inc * DocketLine.quantity as [extension]')
             ->orderBy('Customer.customer_id', 'Stock.Barcode')
             ->get();
+
+        $totalQty = 0;
+        $totalSale = 0;
+
+        foreach ($sqlResult as $value) {
+            # code...DocketLine.gp/DocketLine.sell_inc as [gp]
+            $value->gp = $value->line_gp / ($value->sell_inc != 0 ? $value->sell_inc : 1);
+            $totalQty += $value->qty;
+            $toalSale += $value->extension;
+        }
 
         $data['title'] = 'Profit Report (By Group)';
         $data['shopName'] = $request->input('shop_name', " ");

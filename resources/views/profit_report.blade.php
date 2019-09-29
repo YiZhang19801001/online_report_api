@@ -3,7 +3,7 @@
 <h6>{{$groupCode}}</h6>
 <table class="table table-bordered" id="laravel_crud">
  <thead>
-    <tr>
+    <tr style="background-color:grey">
       <th>Product ID</th>
       <th>Product Description</th>
       <th>Cost Inc</th>
@@ -18,12 +18,22 @@
     <tr>
       <td>{{ $report->Barcode }}</td>
       <td>{{ $report->description }}</td>
-      <td>{{ $report->cost_inc }}</td>
-      <td>{{$report->sell_inc}}</td>
-      <td>{{$report->gp}}</td>
-      <td>{{$report->qty}}</td>
-      <td>{{$report->extension}}</td>
+      <td>{{ number_format($report->cost_inc,2) }}</td>
+      <td>{{number_format($report->sell_inc,2)}}</td>
+      <td>{{number_format($report->gp * 100,2)}}%</td>
+      <td>{{number_format($report->qty,0)}}</td>
+      <td>{{number_format($report->extension,2)}}</td>
     </tr>
     @endforeach
+    <tr style="font-weight:bold">
+    <td></td>
+      <td></td>
+      <td colspan="2">total sales</td>
+      <td></td>
+
+      <td>{{number_format($report->totalQty,0)}}</td>
+      <td>{{number_format($report->totalSale,2)}}</td>
+ </tr>
  </tbody>
+
 </table>
