@@ -18,11 +18,11 @@
     <tr style="border-bottom:1px solid rgba(0,0,0,0.3)">
       <td>{{ $report->Barcode }}</td>
       <td>{{ $report->description }}</td>
-      <td>{{ number_format($report->cost_inc,2) }}</td>
-      <td>{{number_format($report->sell_inc,2)}}</td>
-      <td>{{number_format($report->gp * 100,2)}}%</td>
-      <td>{{number_format($report->qty,0)}}</td>
-      <td>{{number_format($report->extension,2)}}</td>
+      <td style="text-align:right">{{ number_format($report->cost_inc,2) }}</td>
+      <td style="text-align:right">{{number_format($report->sell_inc,2)}}</td>
+      <td style="text-align:right">{{number_format($report->gp * 100,2)}}%</td>
+      <td style="text-align:right">{{number_format($report->qty,0)}}</td>
+      <td style="text-align:right">{{number_format($report->extension,2)}}</td>
     </tr>
     @endforeach
     <tr style="font-weight:bold">
