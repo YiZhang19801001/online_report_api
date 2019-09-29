@@ -31,8 +31,8 @@
       <td style="border-top:1px solid #000" colspan="2">total sales</td>
       <td style="border-top:1px solid #000"></td>
 
-      <td style="border-top:1px solid #000">{{number_format($totalQty,0)}}</td>
-      <td style="border-top:1px solid #000"> {{number_format($totalSale,2)}}</td>
+      <td style="border-top:1px solid #000;text-align:right">{{number_format($totalQty,0)}}</td>
+      <td style="border-top:1px solid #000;text-align:right"> {{number_format($totalSale,2)}}</td>
  </tr>
  </tbody>
 
