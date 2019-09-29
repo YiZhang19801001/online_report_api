@@ -16,10 +16,10 @@
  <tbody>
     @foreach($reports as $report)
     <tr>
-      <td>{{ $report->productId }}</td>
-      <td>{{ $report->productDescription }}</td>
-      <td>{{ $report->costInc }}</td>
-      <td>{{$report->sellInc}}</td>
+      <td>{{ $report->Barcode }}</td>
+      <td>{{ $report->description }}</td>
+      <td>{{ $report->cost_inc }}</td>
+      <td>{{$report->sell_inc}}</td>
       <td>{{$report->gp}}</td>
       <td>{{$report->qty}}</td>
       <td>{{$report->extension}}</td>

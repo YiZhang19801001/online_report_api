@@ -55,7 +55,7 @@ class PDFController extends Controller
             ->join('Stock', 'DocketLine.stock_id', '=', 'Stock.stock_id')
         // ->where('Docket.customer_id',$customer_id)
             ->where('Customer.given_names', $request->group_code)
-            ->selectRaw('Stock.Barcode, Customer.customer_id, Stock.[description] as [description],DocketLine.[cost_inc],DocketLine.sell_inc,DocketLine.[quantity] AS [qty], DocketLine.gp AS [line_gp]')
+            ->selectRaw('Stock.Barcode, Customer.customer_id, Stock.[description] as [description],DocketLine.[cost_inc],DocketLine.sell_inc,DocketLine.[quantity] AS [qty], DocketLine.gp AS [line_gp], DocketLine.sell_inc * DocketLine.quantity as [extension], DocketLine.gp/DocketLine.sell_inc as [gp]')
             ->orderBy('Customer.customer_id', 'Stock.Barcode')
             ->get();
 
@@ -63,7 +63,7 @@ class PDFController extends Controller
         $data['shopName'] = $request->input('shop_name', " ");
         $data['groupCode'] = $request->input('group_code', " ");
 
-        $data['reports'] = [];
+        $data['reports'] = $sqlResult;
 
         $fileName = $request->shop_name . "-" . $request->group_code . ".pdf";
 
