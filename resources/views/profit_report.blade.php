@@ -6,11 +6,11 @@
     <tr style="background-color:grey">
       <th>Product ID</th>
       <th>Product Description</th>
-      <th>Cost Inc</th>
-      <th>Sell Inc</th>
-      <th>GP</th>
-      <th>Qty</th>
-      <th>Extension</th>
+      <th style="text-align:right">Cost Inc</th>
+      <th style="text-align:right">Sell Inc</th>
+      <th style="text-align:right">GP</th>
+      <th style="text-align:right">Qty</th>
+      <th style="text-align:right">Extension</th>
     </tr>
  </thead>
  <tbody>
