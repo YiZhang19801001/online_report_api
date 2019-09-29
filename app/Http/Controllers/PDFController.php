@@ -66,7 +66,7 @@ class PDFController extends Controller
             # code...DocketLine.gp/DocketLine.sell_inc as [gp]
             $value->gp = $value->line_gp / ($value->sell_inc != 0 ? $value->sell_inc : 1);
             $totalQty += $value->qty;
-            $toalSale += $value->extension;
+            $totalSale += $value->extension;
         }
 
         $data['title'] = 'Profit Report (By Group)';
