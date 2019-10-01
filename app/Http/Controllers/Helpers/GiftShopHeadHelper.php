@@ -716,7 +716,7 @@ class GiftShopHeadHelper
                 ->join('Customer', 'Customer.customer_id', '=', 'Docket.customer_id')
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
-                ->selectRaw('Customer.barcode,Customer.given_names as groupName,count(DISTINCT Docket.Docket_id) as count,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp , sum(DocketLine.sell_inc * DocketLine.quantity) as sales')
+                ->selectRaw('Customer.barcode,Customer.given_names as groupName,Customer.addr3 as guide,count(DISTINCT Docket.Docket_id) as count,sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp , sum(DocketLine.sell_inc * DocketLine.quantity) as sales')
                 ->groupBy('Customer.barcode', 'Customer.surname', 'Customer.given_names')
                 ->orderBy('sales', 'desc')
                 ->get();
