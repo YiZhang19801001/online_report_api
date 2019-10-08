@@ -775,7 +775,6 @@ class GiftShopHeadHelper
                 ->first();
 
             # calculate totalRefund
-            $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
             $sqlResult2 = DB::connection('sqlsrv')->table('DocketLine')
                 ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
             // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
@@ -783,7 +782,7 @@ class GiftShopHeadHelper
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->where('DocketLine.quantity', '<', 0)
-                ->selectRaw('sum(DocketLine.quantity) as refundQty')
+                ->selectRaw('sum(DocketLine.quantity) * -1 as refundQty,sum(DocketLine.quantity * DocketLine.sell_inc) * -1 as totalRefund' )
                 ->first();
             // ->get();
 
@@ -797,7 +796,7 @@ class GiftShopHeadHelper
                 'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
                 'gp_percentage' => $sqlResult->gp_percentage,
                 'gst' => $sqlResult->gst,
-                'totalRefund' => $sqlResult->totalRefund,
+                'totalRefund' => $sqlResult2->totalRefund,
                 'refundQty' => $sqlResult2->refundQty,
                 'connected' => true,
 
