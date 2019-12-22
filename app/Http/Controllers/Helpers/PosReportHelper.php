@@ -210,8 +210,8 @@ class PosReportHelper
             if ($report != "") {
                 array_push($reports, $report);
                 array_push($newShops, $shop);
-            }else{
-                array_push($reports,[
+            } else {
+                array_push($reports, [
                     'totalSales' => null,
                     'totalTx' => null,
                     'shop' => $shop,
@@ -257,16 +257,25 @@ class PosReportHelper
                 # read all dockets during the period
                 $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
                     ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-                // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-                // ->where('Stock.stock_id', '>', 0)
+                    ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                    ->where('Stock.stock_id', '>', 0)
                     ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                     ->whereIn('Docket.transaction', ["SA", "IV"])
                     ->whereIn('transaction', ["SA", "IV"])
-                    ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum(DocketLine.RRP - DocketLine.sell_inc) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
+                    ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)*DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
                     ->first();
 
-                # calculate totalRefund
-                $sqlResult->totalRefund = ($sqlResult->totalSales - $sqlResult->absTotal) / 2;
+# calculate totalRefund
+                $sqlResult2 = DB::connection('sqlsrv')->table('DocketLine')
+                    ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
+                    ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                    ->where('Stock.stock_id', '>', 0)
+                    ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+                    ->whereIn('Docket.transaction', ["SA", "IV"])
+                    ->where('DocketLine.quantity', '<', 0)
+                    ->selectRaw('sum(DocketLine.quantity) * -1 as refundQty,sum(DocketLine.quantity * DocketLine.sell_inc) * -1 as totalRefund')
+                    ->first();
+
                 # calculate gp_percentage
                 $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
                 return [
@@ -276,7 +285,7 @@ class PosReportHelper
                     'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
                     'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
                     'gp_percentage' => $sqlResult->gp_percentage,
-                    'totalRefund' => $sqlResult->totalRefund,
+                    'totalRefund' => $sqlResult2->totalRefund,
                 ];
             }
         } catch (\Throwable $th) {

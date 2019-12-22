@@ -208,7 +208,7 @@ class HeadReportHelper
             foreach ($sqlResult as $item) {
                 $item->gp_percentage = $item->totalSales_ex != 0 ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
-                    if ($shop->shop_id === $item->shop_id) {
+                    if ($shop->shop_id == $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
                     }
                 }
@@ -218,8 +218,8 @@ class HeadReportHelper
 
             $sqlResult = DB::connection('sqlsrv')->table('DocketLine')
                 ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
-            // ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
-            // ->where('Stock.stock_id', '>', 0)
+                ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
+                ->where('Stock.stock_id', '>', 0)
                 ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                 ->whereIn('Docket.transaction', ["SA", "IV"])
                 ->selectRaw('Docket.shop_id, sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)* DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc* DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
@@ -230,7 +230,7 @@ class HeadReportHelper
                 $item->totalRefund = ($item->totalSales - $item->absTotal) / 2;
                 $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
-                    if ($shop->shop_id === $item->shop_id) {
+                    if ($shop->shop_id == $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
                     }
                 }
@@ -244,7 +244,7 @@ class HeadReportHelper
             $flag = false;
             foreach ($sqlResult as $item) {
                 $item = json_decode(json_encode($item));
-                if ($shop->shop_id === $item->shop_id) {
+                if ($shop->shop_id == $item->shop_id) {
                     $flag = true;
                 }
             }

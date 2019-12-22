@@ -50,7 +50,7 @@ class SqlController extends Controller
             $item->totalRefund = $item->totalSales - $item->absTotal;
             $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales : 0;
             // foreach ($shops as $shop) {
-            //     if ($shop->shop_id === $item->shop_id) {
+            //     if ($shop->shop_id == $item->shop_id) {
             //         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
             //     }
             // }
