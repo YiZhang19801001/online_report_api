@@ -471,9 +471,7 @@ class HeadReportHelper
 
         $groupedGroups = $groups->groupBy('date');
 
-        foreach ($groupedGroups as $key => $value) {
-            $value['amount'] = collect($value)->sum(total_inc);
-        }
+        
 
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
