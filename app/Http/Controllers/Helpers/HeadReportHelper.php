@@ -486,7 +486,7 @@ class HeadReportHelper
                         if(!in_array(['type'=>'number','value'=>$key3],$ths)){
                             // if ths not contain this paymenttype add it first
                             array_push($ths,['type'=>'number','value'=>$key3]);
-                            array_push($dataFormat,['type'=>number,'value'=>$key3]);
+                            array_push($dataFormat,['type'=>'number','value'=>$key3]);
                             $row[$key3] = collect($value3)->sum('payment_amount');
                         }else{
                             //if ths has contained this paymenttype just add value to certain day report
