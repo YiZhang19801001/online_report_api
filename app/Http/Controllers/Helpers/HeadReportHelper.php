@@ -473,7 +473,18 @@ class HeadReportHelper
             $row['amount'] = collect($value)->sum('total_inc');
             foreach ($groupedGroups as $key2 => $value2) {
                 if ($key2 == $key) {
-                    $row['test'] = collect($value2)->groupBy('paymenttype');
+                    $mediaReports = collect($value2)->groupBy('paymenttype');
+                    // add paymenttype to $ths
+                    foreach ($mediaReports as $key3 => $value3) {
+                        if(!in_array(['type'=>'number','value'=>$key3],$ths)){
+                            // if ths not contain this paymenttype add it first
+                            array_push(['type'=>'number','value'=>$key3],$ths);
+                            $row[$key3] = $value3;
+                        }else{
+                            //if ths has contained this paymenttype just add value to certain day report
+                            $row[$key3] = $value3;
+                        }
+                    }
                 }
             }
             array_push($data, $row);
