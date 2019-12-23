@@ -461,8 +461,8 @@ class HeadReportHelper
             ->where('Docket.shop_id', $shopId)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
             ->whereIn('Docket.transaction', ["SA", "IV"])
-            ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
-            ->groupBy('Payments.paymenttype')
+            ->selectRaw('CONVERT(VARCHAR(10), docket_date, 120) as date,sum(Payments.amount) as total')
+            ->groupBy('date')
             ->get();
 
         foreach ($docketGroups as $key => $value) {
