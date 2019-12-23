@@ -463,10 +463,7 @@ class HeadReportHelper
             ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype,Payments.amount as payment_amount')
             ->get();
 
-        
-
-        
-
+    
         $groupedGroups = $groups->groupBy('date');
 
         

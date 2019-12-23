@@ -10,6 +10,7 @@ use App\TourGroup;
 use App\Shop;
 use App\Customer;
 use App\PosHeadShop;
+use App\Payments;
 
 class GiftShopHeadHelper
 {
@@ -543,32 +544,65 @@ class GiftShopHeadHelper
                 \Config::set('database.connections.sqlsrv.port', 1433);
 
         $dockets = Docket::whereBetween('docket_date', [$startDate, $endDate])->whereIn('transaction', ["SA", "IV"])->select(DB::raw('CONVERT(VARCHAR(10), docket_date, 120) as date, gp,discount, total_inc'))->get();
-
         $ths = array(
             ['type' => 'text', 'value' => 'date'],
             ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
+
         );
         $dataFormat = array(
             ['type' => 'text', 'value' => 'date'],
             ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
+
         );
 
         $data = array();
 
         $docketGroups = $dockets->groupBy('date');
 
+        $groups = DB::connection('sqlsrv')->table('Payments')
+            ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
+            ->where('Docket.shop_id', $shopId)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype,Payments.amount as payment_amount')
+            ->get();
+
+    
+        $groupedGroups = $groups->groupBy('date');
+
+        
+
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
             $row['gp'] = collect($value)->sum('gp');
             $row['discount'] = collect($value)->sum('discount');
             $row['amount'] = collect($value)->sum('total_inc');
-
+            foreach ($groupedGroups as $key2 => $value2) {
+                if ($key2 == $key) {
+                    $mediaReports = collect($value2)->groupBy('paymenttype');
+                    // add paymenttype to $ths
+                    foreach ($mediaReports as $key3 => $value3) {
+                        if(!in_array(['type'=>'number','value'=>$key3],$ths)){
+                            // if ths not contain this paymenttype add it first
+                            array_push($ths,['type'=>'number','value'=>$key3]);
+                            array_push($dataFormat,['type'=>'number','value'=>$key3]);
+                            $row[$key3] = collect($value3)->sum('payment_amount');
+                        }else{
+                            //if ths has contained this paymenttype just add value to certain day report
+                            $row[$key3] = collect($value3)->sum('payment_amount');
+                        }
+                    }
+                }
+            }
             array_push($data, $row);
         }
+
+        // $sampleDocket = Docket::first();
+
+        array_push($ths,['type' => 'number', 'value' => 'discount'],
+        ['type' => 'number', 'value' => 'gp']);
+        array_push($dataFormat,['type' => 'number', 'value' => 'discount'],
+        ['type' => 'number', 'value' => 'gp']);
 
         // $sampleDocket = Docket::first();
 
