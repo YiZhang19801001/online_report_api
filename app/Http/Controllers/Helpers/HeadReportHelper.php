@@ -464,6 +464,9 @@ class HeadReportHelper
             ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype')
             ->get();
 
+        $test = $groups->groupBy('date');
+        $test2 = $test->groupBy('paymenttype');
+
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
             $row['gp'] = collect($value)->sum('gp');
@@ -475,7 +478,7 @@ class HeadReportHelper
 
         // $sampleDocket = Docket::first();
 
-        return compact('ths', 'dataFormat', 'data', 'groups');
+        return compact('ths', 'dataFormat', 'data', 'groups', 'test', 'test2');
 
     }
 
