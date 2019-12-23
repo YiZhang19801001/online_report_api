@@ -464,21 +464,24 @@ class HeadReportHelper
             ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype')
             ->get();
 
-        $test = $groups->groupBy('date');
-        $test2 = $test->groupBy('paymenttype');
+        $groupedGroups = $groups->groupBy('date');
 
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
             $row['gp'] = collect($value)->sum('gp');
             $row['discount'] = collect($value)->sum('discount');
             $row['amount'] = collect($value)->sum('total_inc');
-
+            foreach ($groupedGroups as $key2 => $value2) {
+                if ($key2 == $key) {
+                    $row['test'] = collect($value2)->groupBy('paymenttype');
+                }
+            }
             array_push($data, $row);
         }
 
         // $sampleDocket = Docket::first();
 
-        return compact('ths', 'dataFormat', 'data', 'groups', 'test', 'test2');
+        return compact('ths', 'dataFormat', 'data');
 
     }
 
