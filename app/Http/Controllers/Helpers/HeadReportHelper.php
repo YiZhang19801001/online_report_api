@@ -478,7 +478,7 @@ class HeadReportHelper
                     foreach ($mediaReports as $key3 => $value3) {
                         if(!in_array(['type'=>'number','value'=>$key3],$ths)){
                             // if ths not contain this paymenttype add it first
-                            array_push(['type'=>'number','value'=>$key3],$ths);
+                            array_push($ths,['type'=>'number','value'=>$key3]);
                             $row[$key3] = $value3;
                         }else{
                             //if ths has contained this paymenttype just add value to certain day report
