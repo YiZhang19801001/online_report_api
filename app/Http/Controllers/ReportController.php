@@ -183,7 +183,7 @@ class ReportController extends Controller
             \Config::set('database.connections.sqlsrv.database', $shop->database_name);
             \Config::set('database.connections.sqlsrv.port', $shop->port);
 
-            $shops = PosHeadShop::where('shop_id', '>', 0)->get();
+            $shops = PosHeadShop::where('shop_id', '>', 0)->where('inactive', '!=', 1)->get();
             #call helper class to generate data
             $reports = $this->headHelper->getTotalSummary($shops, $startDate, $endDate, $user);
 
