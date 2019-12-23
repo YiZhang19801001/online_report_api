@@ -456,6 +456,15 @@ class HeadReportHelper
 
         $docketGroups = $dockets->groupBy('date');
 
+        $groups = DB::connection('sqlsrv')->table('Payments')
+            ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
+            ->where('Docket.shop_id', $shopId)
+            ->whereBetween('Docket.docket_date', [$startDate, $endDate])
+            ->whereIn('Docket.transaction', ["SA", "IV"])
+            ->selectRaw('Payments.paymenttype,sum(Payments.amount) as total')
+            ->groupBy('Payments.paymenttype')
+            ->get();
+
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
             $row['gp'] = collect($value)->sum('gp');
@@ -467,7 +476,7 @@ class HeadReportHelper
 
         // $sampleDocket = Docket::first();
 
-        return compact('ths', 'dataFormat', 'data');
+        return compact('ths', 'dataFormat', 'data', 'groups');
 
     }
 
