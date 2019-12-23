@@ -443,14 +443,12 @@ class HeadReportHelper
         $ths = array(
             ['type' => 'text', 'value' => 'date'],
             ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
+
         );
         $dataFormat = array(
             ['type' => 'text', 'value' => 'date'],
             ['type' => 'number', 'value' => 'amount'],
-            ['type' => 'number', 'value' => 'discount'],
-            ['type' => 'number', 'value' => 'gp'],
+
         );
 
         $data = array();
@@ -500,7 +498,12 @@ class HeadReportHelper
 
         // $sampleDocket = Docket::first();
 
-        return compact('ths', 'dataFormat', 'data','groupedGroups');
+        array_push($ths,['type' => 'number', 'value' => 'discount'],
+        ['type' => 'number', 'value' => 'gp']);
+        array_push($dataFormat,['type' => 'number', 'value' => 'discount'],
+        ['type' => 'number', 'value' => 'gp']);
+
+        return compact('ths', 'dataFormat', 'data');
 
     }
 
