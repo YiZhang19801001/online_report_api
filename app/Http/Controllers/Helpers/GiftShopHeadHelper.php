@@ -849,6 +849,7 @@ class GiftShopHeadHelper
                 'gst' => 0,
                 'totalRefund' => 0,
                 'refundQty' => 0,
+                'toRefund'=>null,
                 'connected' => false,
             ];
         }

@@ -220,6 +220,7 @@ class PosReportHelper
                             'discount' => null,
                             'gp_percentage' => null,
                             'totalRefund' => null,
+                            'toRefund'=>null
                         ]);
                     }
             }
@@ -238,6 +239,7 @@ class PosReportHelper
                     'discount' => null,
                     'gp_percentage' => null,
                     'totalRefund' => null,
+                    'toRefund'=>null, 
                 ]);
                     
             }
