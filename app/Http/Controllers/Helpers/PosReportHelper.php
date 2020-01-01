@@ -289,6 +289,7 @@ class PosReportHelper
                 ];
             }
         } catch (\Throwable $th) {
+            var_dump($th->getMessage());
             return [
                 'totalSales' => 0,
                 'totalTx' => 0,
@@ -493,16 +494,13 @@ class PosReportHelper
 
         $groups = DB::connection('sqlsrv')->table('Payments')
             ->join('Docket', 'Payments.docket_id', '=', 'Docket.docket_id')
-            // ->where('Docket.shop_id', $shopId)
+        // ->where('Docket.shop_id', $shopId)
             ->whereBetween('Docket.docket_date', [$startDate, $endDate])
             ->whereIn('Docket.transaction', ["SA", "IV"])
             ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype,Payments.amount as payment_amount')
             ->get();
 
-    
         $groupedGroups = $groups->groupBy('date');
-
-        
 
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
@@ -514,12 +512,12 @@ class PosReportHelper
                     $mediaReports = collect($value2)->groupBy('paymenttype');
                     // add paymenttype to $ths
                     foreach ($mediaReports as $key3 => $value3) {
-                        if(!in_array(['type'=>'money','value'=>$key3],$ths)){
+                        if (!in_array(['type' => 'money', 'value' => $key3], $ths)) {
                             // if ths not contain this paymenttype add it first
-                            array_push($ths,['type'=>'money','value'=>$key3]);
-                            array_push($dataFormat,['type'=>'money','value'=>$key3]);
+                            array_push($ths, ['type' => 'money', 'value' => $key3]);
+                            array_push($dataFormat, ['type' => 'money', 'value' => $key3]);
                             $row[$key3] = collect($value3)->sum('payment_amount');
-                        }else{
+                        } else {
                             //if ths has contained this paymenttype just add value to certain day report
                             $row[$key3] = collect($value3)->sum('payment_amount');
                         }
@@ -531,10 +529,10 @@ class PosReportHelper
 
         // $sampleDocket = Docket::first();
 
-        array_push($ths,['type' => 'number', 'value' => 'discount'],
-        ['type' => 'number', 'value' => 'gp']);
-        array_push($dataFormat,['type' => 'number', 'value' => 'discount'],
-        ['type' => 'number', 'value' => 'gp']);
+        array_push($ths, ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp']);
+        array_push($dataFormat, ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp']);
 
         return compact('ths', 'dataFormat', 'data');
 
