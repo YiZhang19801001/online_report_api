@@ -289,7 +289,16 @@ class PosReportHelper
                 ];
             }
         } catch (\Throwable $th) {
-            return "";
+            return [
+                'totalSales' => 0,
+                'totalTx' => 0,
+                'shop' => $shop,
+                'gp' => 0,
+                'discount' => 0,
+                'gp_percentage' => 0,
+                'totalRefund' => 0,
+                'connected' => false,
+            ];
         }
 
     }
