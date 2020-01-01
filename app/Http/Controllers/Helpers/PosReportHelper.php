@@ -226,8 +226,11 @@ class PosReportHelper
 
         return ['reports' => collect($reports)->values(), 'shops' => $newShops];
         } catch (\Throwable $th) {
-            return ['reports' => [
-                [
+
+            $reports = [];
+            $newShops = [];
+            foreach ($shops as $shop) {
+                array_push($reports, [
                     'totalSales' => null,
                     'totalTx' => null,
                     'shop' => $shop,
@@ -235,8 +238,12 @@ class PosReportHelper
                     'discount' => null,
                     'gp_percentage' => null,
                     'totalRefund' => null,
-                ]
-            ], 'shops' => $newShops];        
+                ]);
+                    
+            }
+
+            return ['reports' => collect($reports)->values(), 'shops' => $newShops];
+      
         }
     }
 
