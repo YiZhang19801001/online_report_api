@@ -203,15 +203,31 @@ class PosReportHelper
 
     public function getTotalSummary($shops, $startDate, $endDate, $user)
     {
-        $reports = [];
-        $newShops = [];
-        foreach ($shops as $shop) {
-            $report = $this->makeReport($shop, $startDate, $endDate, $user);
-            if ($report != "") {
-                array_push($reports, $report);
-                array_push($newShops, $shop);
-            } else {
-                array_push($reports, [
+        try {
+            $reports = [];
+            $newShops = [];
+            foreach ($shops as $shop) {
+                $report = $this->makeReport($shop, $startDate, $endDate, $user);
+                if ($report != "") {
+                    array_push($reports, $report);
+                    array_push($newShops, $shop);
+                    } else {
+                        array_push($reports, [
+                            'totalSales' => null,
+                            'totalTx' => null,
+                            'shop' => $shop,
+                            'gp' => null,
+                            'discount' => null,
+                            'gp_percentage' => null,
+                            'totalRefund' => null,
+                        ]);
+                    }
+            }
+
+        return ['reports' => collect($reports)->values(), 'shops' => $newShops];
+        } catch (\Throwable $th) {
+            return ['reports' => [
+                [
                     'totalSales' => null,
                     'totalTx' => null,
                     'shop' => $shop,
@@ -219,11 +235,9 @@ class PosReportHelper
                     'discount' => null,
                     'gp_percentage' => null,
                     'totalRefund' => null,
-                ]);
-            }
+                ]
+            ], 'shops' => $newShops];        
         }
-
-        return ['reports' => collect($reports)->values(), 'shops' => $newShops];
     }
 
     public function makeReport($shop, $startDate, $endDate, $user)
@@ -289,7 +303,6 @@ class PosReportHelper
                 ];
             }
         } catch (\Throwable $th) {
-            var_dump($th->getMessage());
             return [
                 'totalSales' => 0,
                 'totalTx' => 0,
