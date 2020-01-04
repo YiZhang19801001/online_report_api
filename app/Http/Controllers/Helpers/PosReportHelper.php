@@ -252,6 +252,7 @@ class PosReportHelper
     public function makeReport($shop, $startDate, $endDate, $user)
     {
         try {
+            set_time_limit(30);
             DB::purge('sqlsrv');
 
             // set connection database ip in run time
