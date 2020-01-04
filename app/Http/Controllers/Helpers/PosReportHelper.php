@@ -211,21 +211,21 @@ class PosReportHelper
                 if ($report != "") {
                     array_push($reports, $report);
                     array_push($newShops, $shop);
-                    } else {
-                        array_push($reports, [
-                            'totalSales' => null,
-                            'totalTx' => null,
-                            'shop' => $shop,
-                            'gp' => null,
-                            'discount' => null,
-                            'gp_percentage' => null,
-                            'totalRefund' => null,
-                            'toRefund'=>null
-                        ]);
-                    }
+                } else {
+                    array_push($reports, [
+                        'totalSales' => null,
+                        'totalTx' => null,
+                        'shop' => $shop,
+                        'gp' => null,
+                        'discount' => null,
+                        'gp_percentage' => null,
+                        'totalRefund' => null,
+                        'toRefund' => null,
+                    ]);
+                }
             }
 
-        return ['reports' => collect($reports)->values(), 'shops' => $newShops];
+            return ['reports' => collect($reports)->values(), 'shops' => $newShops];
         } catch (\Throwable $th) {
 
             $reports = [];
@@ -239,13 +239,13 @@ class PosReportHelper
                     'discount' => null,
                     'gp_percentage' => null,
                     'totalRefund' => null,
-                    'toRefund'=>null, 
+                    'toRefund' => null,
                 ]);
-                    
+
             }
 
             return ['reports' => collect($reports)->values(), 'shops' => $newShops];
-      
+
         }
     }
 
@@ -273,7 +273,7 @@ class PosReportHelper
                     'shop' => $shop,
                     'gp' => $sqlResult->gp == null ? 0 : $sqlResult->gp,
                     'discount' => $sqlResult->discount == null ? 0 : $sqlResult->discount,
-                    'gp_percentage' => $sqlResult->totalSales_ex == 0 ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales_ex,
+                    'gp_percentage' => ($sqlResult->totalSales_ex == 0 || !$sqlResult->totalSales_ex) ? 0 : $sqlResult->gp_percentage / $sqlResult->totalSales_ex,
                     'totalRefund' => $sqlResult->totalRefund,
                 ];
             } else {
@@ -300,7 +300,7 @@ class PosReportHelper
                     ->first();
 
                 # calculate gp_percentage
-                $sqlResult->gp_percentage = $sqlResult->totalSales_ex != 0 ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
+                $sqlResult->gp_percentage = ($sqlResult->totalSales_ex != 0 && $sqlResult->totalSales_ex) ? $sqlResult->gp / $sqlResult->totalSales_ex : 0;
                 return [
                     'totalSales' => $sqlResult->totalSales,
                     'totalTx' => $sqlResult->totalTx,
@@ -656,7 +656,7 @@ class PosReportHelper
         }
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount_ex == 0 ? 1 : $value->amount_ex);
+            $value->gp_percentage = $value->gp / (($value->amount_ex == 0 || !$value->amount_ex) ? 1 : $value->amount_ex);
         }
 
         return compact('ths', 'dataFormat', 'data');

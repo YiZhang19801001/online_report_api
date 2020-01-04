@@ -6,7 +6,6 @@ use App\HistDocket;
 use App\HistPayments;
 use App\Stock;
 use \Illuminate\Support\Facades\DB;
-use App\Payments;
 
 class HeadReportHelper
 {
@@ -207,7 +206,7 @@ class HeadReportHelper
                 ->groupBy('Docket.shop_id')->get();
 
             foreach ($sqlResult as $item) {
-                $item->gp_percentage = $item->totalSales_ex != 0 ? $item->gp / $item->totalSales_ex : 0;
+                $item->gp_percentage = ($item->totalSales_ex != 0 && $item->totalSales_ex) ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id == $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
@@ -229,7 +228,7 @@ class HeadReportHelper
             foreach ($sqlResult as $item) {
                 # calculate totalRefund
                 $item->totalRefund = ($item->totalSales - $item->absTotal) / 2;
-                $item->gp_percentage = $item->totalSales != 0 ? $item->gp / $item->totalSales_ex : 0;
+                $item->gp_percentage = ($item->totalSales != 0 && $item->totalSales) ? $item->gp / $item->totalSales_ex : 0;
                 foreach ($shops as $shop) {
                     if ($shop->shop_id == $item->shop_id) {
                         $item->shop = ['shop_id' => $shop->shop_id, 'shop_name' => $shop->shop_name];
@@ -463,10 +462,7 @@ class HeadReportHelper
             ->selectRaw('CONVERT(VARCHAR(10), Docket.docket_date, 120) as date,Docket.gp as gp, Docket.discount as discount, Docket.total_inc as total_inc, Payments.paymenttype as paymenttype,Payments.amount as payment_amount')
             ->get();
 
-    
         $groupedGroups = $groups->groupBy('date');
-
-        
 
         foreach ($docketGroups as $key => $value) {
             $row['date'] = $key;
@@ -478,12 +474,12 @@ class HeadReportHelper
                     $mediaReports = collect($value2)->groupBy('paymenttype');
                     // add paymenttype to $ths
                     foreach ($mediaReports as $key3 => $value3) {
-                        if(!in_array(['type'=>'money','value'=>$key3],$ths)){
+                        if (!in_array(['type' => 'money', 'value' => $key3], $ths)) {
                             // if ths not contain this paymenttype add it first
-                            array_push($ths,['type'=>'money','value'=>$key3]);
-                            array_push($dataFormat,['type'=>'money','value'=>$key3]);
+                            array_push($ths, ['type' => 'money', 'value' => $key3]);
+                            array_push($dataFormat, ['type' => 'money', 'value' => $key3]);
                             $row[$key3] = collect($value3)->sum('payment_amount');
-                        }else{
+                        } else {
                             //if ths has contained this paymenttype just add value to certain day report
                             $row[$key3] = collect($value3)->sum('payment_amount');
                         }
@@ -495,10 +491,10 @@ class HeadReportHelper
 
         // $sampleDocket = Docket::first();
 
-        array_push($ths,['type' => 'number', 'value' => 'discount'],
-        ['type' => 'number', 'value' => 'gp']);
-        array_push($dataFormat,['type' => 'number', 'value' => 'discount'],
-        ['type' => 'number', 'value' => 'gp']);
+        array_push($ths, ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp']);
+        array_push($dataFormat, ['type' => 'number', 'value' => 'discount'],
+            ['type' => 'number', 'value' => 'gp']);
 
         return compact('ths', 'dataFormat', 'data');
 
@@ -606,7 +602,7 @@ class HeadReportHelper
         }
 
         foreach ($data as $value) {
-            $value->gp_percentage = $value->gp / ($value->amount_ex == 0 ? 1 : $value->amount_ex);
+            $value->gp_percentage = $value->gp / (($value->amount_ex == 0 || !$value->amount_ex) ? 1 : $value->amount_ex);
         }
 
         return compact('ths', 'dataFormat', 'data');
