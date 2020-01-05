@@ -76,6 +76,7 @@ return [
             'password' => env('DB_PASSWORD', 'forge'),
             'charset' => 'utf8',
             'prefix' => '',
+
         ],
 
     ],

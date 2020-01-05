@@ -253,6 +253,7 @@ class PosReportHelper
     {
         try {
             set_time_limit(30);
+            init_set('mssql.timeout',3);
             DB::purge('sqlsrv');
 
             // set connection database ip in run time
