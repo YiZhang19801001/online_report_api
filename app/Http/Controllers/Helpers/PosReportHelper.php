@@ -312,7 +312,7 @@ class PosReportHelper
                 ];
             }
         } catch (\Throwable $th) {
-            return "";
+            return $th->getMessage();
         }
 
     }

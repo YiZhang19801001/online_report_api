@@ -227,7 +227,6 @@ class ReportController extends Controller
                             $groupNameToPax = TourGroup::
                                 whereBetween('date_start', [$startDate, $endDate])
                                 ->select('group_name', 'pax')->get();
-
                         }
                         // var_dump($groupNameToPax);
                         // return response()->json(compact('groupNameToPax'), 200);
