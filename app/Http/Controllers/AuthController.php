@@ -22,11 +22,11 @@ class AuthController extends Controller
      */
     public function signup(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            // 'email' => 'required|string|email|unique:users',
-            'password' => 'required|string',
-        ]);
+        // $request->validate([
+        //     'name' => 'required|string',
+        //     // 'email' => 'required|string|email|unique:users',
+        //     'password' => 'required|string',
+        // ]);
         $user = new User([
             'name' => $request->name,
             // 'email' => $request->email,
@@ -56,11 +56,12 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'password' => 'required|string',
-            'remember_me' => 'boolean',
-        ]);
+        // $request->validate([
+        //     'name' => 'required|string',
+        //     'password' => 'required|string',
+        //     'remember_me' => 'boolean',
+        // ]);
+
         $credentials = request(['name', 'password']);
         if (!Auth::attempt($credentials)) {
             return response()->json([
