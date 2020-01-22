@@ -253,7 +253,7 @@ class PosReportHelper
     {
         try {
             set_time_limit(30);
-            init_set('mssql.timeout',3);
+            // init_set('mssql.timeout', 3);
             DB::purge('sqlsrv');
 
             // set connection database ip in run time
@@ -290,7 +290,7 @@ class PosReportHelper
                     ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)*DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
                     ->first();
 
-# calculate totalRefund
+                # calculate totalRefund
                 $sqlResult2 = DB::connection('sqlsrv')->table('DocketLine')
                     ->join('Docket', 'DocketLine.docket_id', '=', 'Docket.docket_id')
                     ->join('Stock', 'Stock.stock_id', '=', 'DocketLine.stock_id')
@@ -663,5 +663,48 @@ class PosReportHelper
 
         return compact('ths', 'dataFormat', 'data');
 
+    }
+
+    /**
+     * function - generate summary report for single shop use for step loading in loading page
+     *
+     */
+    public function getSingleShopReport($shop, $startDate, $endDate, $user)
+    {
+        try {
+            $result = $this->makeReport($shop, $startDate, $endDate, $user);
+            if ($result == "") {
+                $report = [
+                    'totalSales' => null,
+                    'totalTx' => null,
+                    'shop' => $shop,
+                    'gp' => null,
+                    'discount' => null,
+                    'gp_percentage' => null,
+                    'totalRefund' => null,
+                    'toRefund' => null,
+                ];
+            } else {
+                $report = $result;
+            }
+
+            return $report;
+
+        } catch (\Throwable $th) {
+
+            $report = [
+                'totalSales' => null,
+                'totalTx' => null,
+                'shop' => $shop,
+                'gp' => null,
+                'discount' => null,
+                'gp_percentage' => null,
+                'totalRefund' => null,
+                'toRefund' => null,
+                'errMessage' => $th->getMessage(),
+            ];
+
+            return $report;
+        }
     }
 }

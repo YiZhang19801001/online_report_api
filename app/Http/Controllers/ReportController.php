@@ -149,6 +149,35 @@ class ReportController extends Controller
 
     }
 
+    public function show(Request $request, $id)
+    {
+        // generate summary report for each store
+        try {
+            #read inputs
+            $today = new \DateTime('now', new \DateTimeZone('Australia/Sydney'));
+
+            $startDate = new \DateTime($request->startDate, new \DateTimeZone('Australia/Sydney'));
+            $endDate = new \DateTime($request->endDate, new \DateTimeZone('Australia/Sydney'));
+
+            $user = $request->user();
+
+            #validate - check shop is belong to this user or not
+            $shop = Shop::find($id);
+            if (!$shop) {
+                return response()->json(["code" => "9000", "message" => "Unauthorized Shop"], 400);
+            }
+            #validate end
+
+            $report = $this->helper->getSingleShopReport($shop, $startDate, $endDate, $user);
+
+            return response()->json(compact('report'), 200);
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(["errors" => $th->getMessage()], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
