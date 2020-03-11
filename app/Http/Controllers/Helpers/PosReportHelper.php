@@ -286,7 +286,6 @@ class PosReportHelper
                     ->where('Stock.stock_id', '>', 0)
                     ->whereBetween('Docket.docket_date', [$startDate, $endDate])
                     ->whereIn('Docket.transaction', ["SA", "IV"])
-                    ->whereIn('transaction', ["SA", "IV"])
                     ->selectRaw('sum((DocketLine.sell_ex - DocketLine.cost_ex) * DocketLine.quantity) as gp ,sum((DocketLine.RRP - DocketLine.sell_inc)*DocketLine.quantity) as discount,count(DISTINCT Docket.Docket_id) as totalTx,sum(DocketLine.sell_inc * DocketLine.quantity) as totalSales,sum(abs(DocketLine.sell_inc * DocketLine.quantity)) as absTotal,sum(DocketLine.sell_ex * DocketLine.quantity) as totalSales_ex')
                     ->first();
 
