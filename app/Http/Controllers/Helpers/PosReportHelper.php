@@ -253,8 +253,16 @@ class PosReportHelper
     {
         try {
             set_time_limit(30);
-            init_set('mssql.timeout',3);
             DB::purge('sqlsrv');
+            // ini_set('mssql.connect_timeout',3);
+            // ini_set('sqlsrv.connect_timeout',3);
+
+            // $connectionInfo = array("Database" => $shop->database_name,"PWD"=>$shop->password,"UID"=>$shop->username,);
+            // $conn = \sqlsrv_connect($shop->database_ip, $connectionInfo);
+
+            // if($conn){
+            //     die(json_encode($conn));
+            // }
 
             // set connection database ip in run time
             \Config::set('database.connections.sqlsrv.host', $shop->database_ip);
