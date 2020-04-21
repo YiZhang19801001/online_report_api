@@ -206,7 +206,7 @@ class PosReportHelper
             $newShops = [];
             foreach ($shops as $shop) {
                 $report = $this->makeReport($shop, $startDate, $endDate, $user);
-                if ($report != "") {
+                if ($report["shop"] != "") {
                     array_push($reports, $report);
                     array_push($newShops, $shop);
                 } else {
@@ -219,6 +219,7 @@ class PosReportHelper
                         'gp_percentage' => null,
                         'totalRefund' => null,
                         'toRefund' => null,
+                        'errorMessage' => $report["message"],
                     ]);
                 }
             }
@@ -317,7 +318,7 @@ class PosReportHelper
                 ];
             }
         } catch (\Throwable $th) {
-            return "";
+            return ["shop" => "", "message" => $th->getMessage()];
         }
 
     }
@@ -672,7 +673,7 @@ class PosReportHelper
     {
         try {
             $result = $this->makeReport($shop, $startDate, $endDate, $user);
-            if ($result == "") {
+            if ($result["shop"] == "") {
                 $report = [
                     'totalSales' => null,
                     'totalTx' => null,
@@ -682,6 +683,7 @@ class PosReportHelper
                     'gp_percentage' => null,
                     'totalRefund' => null,
                     'toRefund' => null,
+                    'errorMessage' => $result["message"],
                 ];
             } else {
                 $report = $result;
